@@ -8,8 +8,9 @@ from scipy.stats import stats
 def run_and_tumble(f, x0, constraints_lower=None, constraints_upper=None, alpha_start=None,
                    alpha_decay_fac=1e-3, base_tumble_rate=0.1, stationarity_window=20,
                    eps_stat=1e-3, c_spsa=1e-6, a_spsa=None, gamma_spsa=0.101, alpha_spsa=0.602,
-                   A_fac_spsa=0.05, eps_spsa=1e-12, niter=200, n_bacteria=20, repel=False,
-                   repel_window=10, repel_sigma=None, repel_strength=5e-3, verbosity=0):
+                   A_fac_spsa=0.05, beta_1_adam=0.9, beta_2_adam=0.9, eps_gd=1e-12, niter=200,
+                   n_bacteria=20, repel=False, repel_window=10, repel_sigma=None,
+                   repel_strength=5e-3, verbosity=0):
     """
     ToDo: Write docstring
 
@@ -27,7 +28,9 @@ def run_and_tumble(f, x0, constraints_lower=None, constraints_upper=None, alpha_
     :param gamma_spsa:
     :param alpha_spsa:
     :param A_fac_spsa:
-    :param eps_spsa:
+    :param beta_1_adam:
+    :param beta_2_adam:
+    :param eps_gd:
     :param niter:
     :param n_bacteria:
     :param repel:
@@ -144,7 +147,7 @@ def run_and_tumble(f, x0, constraints_lower=None, constraints_upper=None, alpha_
             grad_repeller = np.zeros(x.shape)
 
         # Run
-        x = x_old + v * alpha - grad_repeller * alpha
+        x = x_old + (v - grad_repeller) * alpha
         if constraints_lower is not None:
             x = np.maximum(x, constraints_lower)
         if constraints_upper is not None:
@@ -226,10 +229,11 @@ def run_and_tumble(f, x0, constraints_lower=None, constraints_upper=None, alpha_
          nfev_spsa_single,
          nit_spsa_single,
          success_spsa_single,
-         trace_spsa_single) = spsa(f, x0, constraints_lower=constraints_lower,
-                                   constraints_upper=constraints_upper, c=c_spsa, a=a_spsa,
-                                   gamma=gamma_spsa, alpha=alpha_spsa, A_fac=A_fac_spsa,
-                                   eps=eps_spsa, niter=niter, verbosity=verbosity)
+         trace_spsa_single) = adam_spsa(f, x0, constraints_lower=constraints_lower,
+                                        constraints_upper=constraints_upper, c=c_spsa, a=a_spsa,
+                                        gamma=gamma_spsa, alpha=alpha_spsa, A_fac=A_fac_spsa,
+                                        beta_1=beta_1_adam, beta_2=beta_2_adam, eps=eps_gd,
+                                        niter=niter, verbosity=verbosity)
         x_best_spsa[n] = x_spsa_single
         f_min_spsa[n] = f_min_spsa_single
         nfev_spsa += nfev_spsa_single
@@ -254,8 +258,8 @@ def run_and_tumble(f, x0, constraints_lower=None, constraints_upper=None, alpha_
     return result
 
 
-def spsa(f, x0, constraints_lower=None, constraints_upper=None, c=1e-3, a=1e-3, gamma=0.101,
-         alpha=0.602, A_fac=0.05, eps=1e-12, niter=10000, verbosity=0):
+def adam_spsa(f, x0, constraints_lower=None, constraints_upper=None, c=1e-3, a=1e-3, gamma=0.101,
+              alpha=0.602, A_fac=0.05, beta_1=0.9, beta_2=0.9, eps=1e-12, niter=10000, verbosity=0):
     """
     ToDo: Write docstring
 
@@ -268,6 +272,8 @@ def spsa(f, x0, constraints_lower=None, constraints_upper=None, c=1e-3, a=1e-3, 
     :param gamma:
     :param alpha:
     :param A_fac:
+    :param beta_1:
+    :param beta_2:
     :param eps:
     :param niter:
     :param verbosity:
@@ -279,6 +285,7 @@ def spsa(f, x0, constraints_lower=None, constraints_upper=None, c=1e-3, a=1e-3, 
     x0 = np.array(x0)
     n_dims = len(x0)
     A = A_fac * niter
+    m = v = 0
 
     if constraints_lower is not None:
         constraints_lower = np.array(constraints_lower)
@@ -319,7 +326,14 @@ def spsa(f, x0, constraints_lower=None, constraints_upper=None, c=1e-3, a=1e-3, 
         f_plus = f(x + ck * delta)
         nfev += 2
         ghat = (f_plus - f_minus) / (2 * ck * np.where(delta == 0, np.inf, delta))
-        x = x - ak * ghat
+
+        # Adam algorithm, with the true gradient replaced by the SPSA
+        m = beta_1 * m + (1 - beta_1) * ghat
+        v = beta_2 * v + (1 - beta_2) * np.power(ghat, 2)
+        m_hat = m / (1 - np.power(beta_1, k + 1))
+        v_hat = v / (1 - np.power(beta_2, k + 1))
+        x = x - ak * m_hat / (np.sqrt(v_hat) + 1e-9)
+
         if constraints_lower is not None:
             x = np.maximum(x, constraints_lower)
         if constraints_upper is not None:

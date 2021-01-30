@@ -124,14 +124,6 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
     if not np.array_equal(x0_population, x0_population_orig):
         warnings.warn('Found initial conditions outside the defined search domain.')
 
-    v = np.empty(x0_population.shape)
-    for m in range(n_bacteria):
-        v_m = np.random.uniform(-1, 1, n_dims)
-        while not v_m.any():
-            v_m = np.random.uniform(-1, 1, n_dims)
-        v_m = v_m / np.sqrt(np.sum(v_m ** 2))
-        v[m] = v_m
-
     max_scale = None
     if bounds is not None:
         domain_range = bound_upper - bound_lower
@@ -159,6 +151,14 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
     trace[0] = x0_population.copy()
     x_sum = x0_population.sum(axis=0)
     x_mean_history = []
+
+    v = np.empty(x0_population.shape)
+    for m in range(n_bacteria):
+        v_m = np.random.uniform(-1, 1, n_dims)
+        while not v_m.any():
+            v_m = np.random.uniform(-1, 1, n_dims)
+        v_m = v_m / np.sqrt(np.sum(v_m ** 2))
+        v[m] = v_m
 
     for n in range(niter):
         alpha = alpha_start + (alpha_end - alpha_start) * (n ** 2) / (niter ** 2)

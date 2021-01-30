@@ -57,12 +57,12 @@ if __name__ == '__main__':
         print('Run-and-tumble algorithm:')
         if problem.constraints.lower is not None and problem.constraints.upper is not None:
             x0 = np.array([problem.constraints.lower, problem.constraints.upper])
+            bounds = np.vstack((problem.constraints.lower, problem.constraints.upper)).T
         else:
             x0 = np.array([[-10, -10], [10, 10]])
+            bounds = None
         start = time.time()
-        ret = run_and_tumble(problem.f, x0,
-                             constraints_lower=problem.constraints.lower,
-                             constraints_upper=problem.constraints.upper)
+        ret = run_and_tumble(problem.f, x0, bounds=bounds)
         end = time.time()
         runtime = end - start
         print('---------------------------------')
@@ -78,7 +78,8 @@ if __name__ == '__main__':
         ax.set_xlim([problem.constraints.lower[0], problem.constraints.upper[0]])
         ax.set_ylim([problem.constraints.lower[1], problem.constraints.upper[1]])
         fig.colorbar(cp)
-        ax.plot(ret.trace[:, 0], ret.trace[:, 1], 'o', c='white', ms=0.7)
+        for single_trace in ret.trace.transpose(1, 0, 2):
+            ax.plot(single_trace[:, 0], single_trace[:, 1], 'o', c='white', ms=0.7)
         plt.show()
 
         # Differential Evolution algorithm
@@ -149,7 +150,6 @@ if __name__ == '__main__':
 
         print('\n')
 
-        # ToDo: Find out why run-and-tumble performs bad for certain test functions
         # ToDo: Run each problem for 100 times and collect statistics
         # ToDo: Save traces and plot all traces in one figure
         # ToDo: 10-dimensional test functions

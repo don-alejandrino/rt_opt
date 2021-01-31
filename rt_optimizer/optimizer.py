@@ -5,7 +5,7 @@ from scipy.optimize import OptimizeResult
 from scipy.stats import stats
 
 
-def prepare_bounds(bounds, n_dims):
+def _prepare_bounds(bounds, n_dims):
     """
     ToDo: Write docstring
 
@@ -28,7 +28,7 @@ def prepare_bounds(bounds, n_dims):
         return None, None
 
 
-def padTrace(trace, targetLength):
+def _pad_trace(trace, targetLength):
     """
     Pad single-bacteria trace to given length.
 
@@ -46,7 +46,7 @@ def padTrace(trace, targetLength):
 def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, base_tumble_rate=0.1,
                    stationarity_window=20, eps_stat=1e-2, n_best_selection=5, c_spsa=1e-6,
                    a_spsa=None, gamma_spsa=0.101, alpha_spsa=0.602, A_fac_spsa=0.05,
-                   beta_1_adam=0.9, beta_2_adam=0.9, eps_gd=1e-10, niter=500, n_bacteria=10,
+                   beta_1_adam=0.9, beta_2_adam=0.9, eps_gd=1e-10, niter=1000, n_bacteria=10,
                    attraction=False, attraction_window=10, attraction_sigma=None,
                    attraction_strength=0.5, verbosity=0):
     """
@@ -79,7 +79,8 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
     :return:
     """
 
-    assert niter > stationarity_window, 'niter must be larger than stationarity_window.'
+    niter_rt = niter // 2
+    assert niter_rt > stationarity_window, 'niter must be larger than stationarity_window.'
     assert verbosity in [0, 1, 2], 'verbosity must be 0, 1, or 2.'
     assert n_best_selection <= n_bacteria, 'n_best_selection must be less equal than n_bacteria.'
 
@@ -96,7 +97,7 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
         raise ValueError('x0 must be either a matrix of shape (2, n_dims) or a vector of size ' +
                          'n_dims.')
 
-    bound_lower, bound_upper = prepare_bounds(bounds, n_dims)
+    bound_lower, bound_upper = _prepare_bounds(bounds, n_dims)
 
     if alpha_start is not None:
         auto_scale_alpha = False
@@ -147,7 +148,7 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
     f_min = f_old.copy()
     f_max = f_old.copy()
     nfev = n_bacteria
-    trace = np.empty((niter + 1, n_bacteria, n_dims))
+    trace = np.empty((niter_rt + 1, n_bacteria, n_dims))
     trace[0] = x0_population.copy()
     x_sum = x0_population.sum(axis=0)
     x_mean_history = []
@@ -160,8 +161,8 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
         v_m = v_m / np.sqrt(np.sum(v_m ** 2))
         v[m] = v_m
 
-    for n in range(niter):
-        alpha = alpha_start + (alpha_end - alpha_start) * (n ** 2) / (niter ** 2)
+    for n in range(niter_rt):
+        alpha = alpha_start + (alpha_end - alpha_start) * (n ** 2) / (niter_rt ** 2)
 
         if attraction:
             kernel = (x[:, None, None, :] -
@@ -230,16 +231,16 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
 
     else:
         if verbosity > 0:
-            print(f'No stationary state could be detected after {niter + 1} iterations. ' +
+            print(f'No stationary state could be detected after {niter_rt + 1} iterations. ' +
                   'Please try increasing niter or the stationarity detection threshold eps_stat.')
-        nit = niter + 1
+        nit = niter_rt + 1
         success_rt = False
 
     if verbosity == 2:
         print('===================================================================================')
     if verbosity > 0:
         print(f'Best result thus far is x = {x_best[np.argmin(f_min)]}, f(x) = {np.min(f_min)}. '
-              'Starting SPSA gradient descent.')
+              f'Starting SPSA gradient descent for the {n_best_selection} best bacteria.')
 
     trace = trace[:(nit + 1)]
     sortIdx = f_min.argsort()
@@ -249,7 +250,8 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
     nfev_spsa = 0
     nit_spsa = 0
     success_spsa = True
-    trace_spsa = np.empty((niter, n_bacteria, n_dims))
+    niter_spsa = niter - niter_rt
+    trace_spsa = np.empty((niter_spsa, n_bacteria, n_dims))
     trace_spsa[:, sortIdx[n_best_selection:], :] = trace[-1, sortIdx[n_best_selection:], :]
     nit_spsa_arr = np.empty(n_best_selection)
 
@@ -263,7 +265,7 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
          success_spsa_single,
          trace_spsa_single) = adam_spsa(f, x0, bounds=bounds, c=c_spsa, a=a_spsa, gamma=gamma_spsa,
                                         alpha=alpha_spsa, A_fac=A_fac_spsa, beta_1=beta_1_adam,
-                                        beta_2=beta_2_adam, eps=eps_gd, niter=niter,
+                                        beta_2=beta_2_adam, eps=eps_gd, niter=niter_spsa,
                                         verbosity=verbosity)
         x_best_spsa[n] = x_spsa_single
         f_min_spsa[n] = f_min_spsa_single
@@ -272,7 +274,7 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
         nit_spsa_arr[n] = nit_spsa_single
         if not success_spsa_single:
             success_spsa = False
-        trace_spsa[:, sortIdx[n], :] = padTrace(trace_spsa_single, niter)
+        trace_spsa[:, sortIdx[n], :] = _pad_trace(trace_spsa_single, niter_spsa)
 
     if success_rt:
         result.success = success_spsa
@@ -289,7 +291,7 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
 
 
 def adam_spsa(f, x0, bounds=None, c=1e-3, a=1e-3, gamma=0.101, alpha=0.602, A_fac=0.05, beta_1=0.9,
-              beta_2=0.9, eps=1e-12, niter=10000, verbosity=0):
+              beta_2=0.9, eps=1e-12, niter=1000, verbosity=0):
     """
     ToDo: Write docstring
 
@@ -316,7 +318,7 @@ def adam_spsa(f, x0, bounds=None, c=1e-3, a=1e-3, gamma=0.101, alpha=0.602, A_fa
     A = A_fac * niter
     m = v = 0
 
-    bound_lower, bound_upper = prepare_bounds(bounds, n_dims)
+    bound_lower, bound_upper = _prepare_bounds(bounds, n_dims)
 
     trace = np.empty((niter, n_dims))
     f0 = f(x0)

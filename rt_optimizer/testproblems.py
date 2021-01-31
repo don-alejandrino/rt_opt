@@ -23,9 +23,9 @@ class TestProblem:
         return self.__ndims
 
     @property
-    def constraints(self):
+    def bounds(self):
         """
-        Return lower and upper constraints as a namespace object.
+        Return lower and upper bounds as a namespace object.
         """
 
         raise NotImplementedError
@@ -47,7 +47,7 @@ class Rastrigin(TestProblem):
         return 10 * self.ndims + np.sum(np.square(x) - 10 * np.cos(2 * np.pi * x))
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-5.12, self.ndims), 'upper': np.repeat(5.12, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -68,7 +68,7 @@ class Ackley(TestProblem):
                 - np.exp(0.5 * (np.cos(2 * np.pi * x1) + np.cos(2 * np.pi * x2))) + np.exp(1) + 20)
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-5, self.ndims), 'upper': np.repeat(5, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -86,7 +86,7 @@ class Sphere(TestProblem):
         return np.sum(np.square(x))
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': None, 'upper': None}
         return SimpleNamespace(**d)
 
@@ -106,7 +106,7 @@ class Rosenbrock(TestProblem):
         return (100 * np.square(x_adv - np.square(x_ret)) + np.square(1 - x_ret)).sum()
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': None, 'upper': None}
         return SimpleNamespace(**d)
 
@@ -127,7 +127,7 @@ class Beale(TestProblem):
                 (2.625 - x1 + x1 * (x2 ** 3)) ** 2)
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-4.5, self.ndims), 'upper': np.repeat(4.5, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -150,7 +150,7 @@ class GoldsteinPrice(TestProblem):
                  (18 - 32 * x1 + 12 * (x1 ** 2) + 48 * x2 - 36 * x1 * x2 + 27 * (x2 ** 2))))
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-2, self.ndims), 'upper': np.repeat(2, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -170,7 +170,7 @@ class Booth(TestProblem):
         return (x1 + 2 * x2 - 7) ** 2 + (2 * x1 + x2 - 5) ** 2
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-10, self.ndims), 'upper': np.repeat(10, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -190,7 +190,7 @@ class Bukin6(TestProblem):
         return 100 * np.sqrt(np.abs(x2 - 0.01 * (x1 ** 2))) + 0.01 * np.abs(x1 + 10)
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.array([-15, -3]), 'upper': np.array([-5, 3])}
         return SimpleNamespace(**d)
 
@@ -210,7 +210,7 @@ class Matyas(TestProblem):
         return 0.26 * (x1 ** 2 + x2 ** 2) - 0.48 * x1 * x2
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-10, self.ndims), 'upper': np.repeat(10, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -231,7 +231,7 @@ class Levi13(TestProblem):
                 (x2 - 1) ** 2 * (1 + np.sin(2 * np.pi * x2) ** 2))
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-10, self.ndims), 'upper': np.repeat(10, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -251,7 +251,7 @@ class Himmelblau(TestProblem):
         return (x1 ** 2 + x2 - 11) ** 2 + (x1 + x2 ** 2 - 7) ** 2
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-5, self.ndims), 'upper': np.repeat(5, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -275,7 +275,7 @@ class ThreeHumpCamel(TestProblem):
         return 2 * (x1 ** 2) - 1.05 * (x1 ** 4) + 1 / 6 * (x1 ** 6) + x1 * x2 + x2 ** 2
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-5, self.ndims), 'upper': np.repeat(5, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -295,7 +295,7 @@ class Easom(TestProblem):
         return -np.cos(x1) * np.cos(x2) * np.exp(-((x1 - np.pi) ** 2 + (x2 - np.pi) ** 2))
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-100, self.ndims), 'upper': np.repeat(100, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -317,7 +317,7 @@ class CrossInTray(TestProblem):
                                                 np.pi))) + 1) ** 0.1)
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-10, self.ndims), 'upper': np.repeat(10, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -342,7 +342,7 @@ class Eggholder(TestProblem):
                 - x1 * np.sin(np.sqrt(abs(x1 - (x2 + 47)))))
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-512, self.ndims), 'upper': np.repeat(512, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -362,7 +362,7 @@ class Hoelder(TestProblem):
         return - abs(np.sin(x1) * np.cos(x2) * np.exp(abs(1 - np.sqrt(x1 ** 2 + x2 ** 2) / np.pi)))
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-10, self.ndims), 'upper': np.repeat(10, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -386,7 +386,7 @@ class McCormick(TestProblem):
         return np.sin(x1 + x2) + (x1 - x2) ** 2 - 1.5 * x1 + 2.5 * x2 + 1
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.array([-1.5, -3]), 'upper': np.array([4, 4])}
         return SimpleNamespace(**d)
 
@@ -406,7 +406,7 @@ class Schaffer2(TestProblem):
         return 0.5 + (np.sin(x1 ** 2 - x2 ** 2) ** 2 - 0.5) / (1 + 0.001 * (x1 ** 2 + x2 ** 2)) ** 2
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-100, self.ndims), 'upper': np.repeat(100, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -427,7 +427,7 @@ class Schaffer4(TestProblem):
                 (1 + 0.001 * (x1 ** 2 + x2 ** 2)) ** 2)
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-100, self.ndims), 'upper': np.repeat(100, self.ndims)}
         return SimpleNamespace(**d)
 
@@ -449,7 +449,7 @@ class StyblinskiTang(TestProblem):
         return 0.5 * (np.power(x, 4) - 16 * np.square(x) + 5 * x).sum()
 
     @property
-    def constraints(self):
+    def bounds(self):
         d = {'lower': np.repeat(-5, self.ndims), 'upper': np.repeat(5, self.ndims)}
         return SimpleNamespace(**d)
 

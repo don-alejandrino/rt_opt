@@ -1,0 +1,657 @@
+<meta charset="UTF-8">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Problem</th>
+      <th>Metric</th>
+      <th>Run-and-Tumble</th>
+      <th>Differential Evolution</th>
+      <th>SHGO</th>
+      <th>Dual Annealing</th>
+      <th>LIPO</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Ackley</td>
+      <td>Absolute error in minimum value</td>
+      <td>1.13319e-10 ± 9.45801e-11</td>
+      <td>0 ± 0</td>
+      <td>3.61162e-10 ± 0</td>
+      <td>1.37751e-08 ± 7.10585e-09</td>
+      <td>0 ± 0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Beale</td>
+      <td>Absolute error in minimum value</td>
+      <td>1.2714e-08 ± 5.07314e-08</td>
+      <td>0.0190517 ± 0.118978</td>
+      <td>9.45564e-15 ± 0</td>
+      <td>1.32386e-11 ± 1.4217e-10</td>
+      <td>1.4084e-21 ± 1.88442e-21</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Booth</td>
+      <td>Absolute error in minimum value</td>
+      <td>7.81072e-10 ± 1.72021e-09</td>
+      <td>3.15544e-30 ± 0</td>
+      <td>2.7756e-17 ± 0</td>
+      <td>1.45225e-12 ± 2.88048e-12</td>
+      <td>1.89406e-27 ± 0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Bukin6</td>
+      <td>Absolute error in minimum value</td>
+      <td>0.00944819 ± 0.0080837</td>
+      <td>0.0214124 ± 0.0131101</td>
+      <td>0.06276 ± 0</td>
+      <td>0.028161 ± 0.0138113</td>
+      <td>0.0491005 ± 6.03372e-05</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>CrossInTray</td>
+      <td>Absolute error in minimum value</td>
+      <td>9.58764e-08 ± 1.33175e-07</td>
+      <td>4.3393e-11 ± 7.32931e-11</td>
+      <td>0.819338 ± 2.22045e-16</td>
+      <td>4.1284e-11 ± 7.52366e-11</td>
+      <td>6.90559e-16 ± 2.86764e-16</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Easom</td>
+      <td>Absolute error in minimum value</td>
+      <td>0.415004 ± 0.492703</td>
+      <td>0.295 ± 0.456043</td>
+      <td>1 ± 2.22045e-16</td>
+      <td>0.499994 ± 0.499994</td>
+      <td>0.754939 ± 0.430052</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Eggholder</td>
+      <td>Absolute error in minimum value</td>
+      <td>0.458467 ± 3.00305</td>
+      <td>46.6017 ± 54.2728</td>
+      <td>24.3027 ± 0</td>
+      <td>23.3504 ± 27.37</td>
+      <td>31.1667 ± 28.5448</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>GoldsteinPrice</td>
+      <td>Absolute error in minimum value</td>
+      <td>1.30947e-11 ± 2.59725e-11</td>
+      <td>8.46206e-12 ± 1.12881e-10</td>
+      <td>4.26326e-14 ± 0</td>
+      <td>1.49598e-12 ± 8.82301e-12</td>
+      <td>5.06684e-14 ± 3.46435e-15</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Himmelblau</td>
+      <td>Absolute error in minimum value</td>
+      <td>1.41505e-10 ± 2.52306e-10</td>
+      <td>1.12452e-29 ± 6.19896e-30</td>
+      <td>5.70204e-15 ± 0</td>
+      <td>4.67442e-13 ± 2.2506e-12</td>
+      <td>7.78909e-28 ± 1.40561e-27</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Hoelder</td>
+      <td>Absolute error in minimum value</td>
+      <td>8.86106e-10 ± 2.38924e-09</td>
+      <td>9.25056e-13 ± 2.76871e-12</td>
+      <td>4.06828 ± 0</td>
+      <td>1.48795e-11 ± 9.14401e-11</td>
+      <td>7.10543e-17 ± 6.11232e-16</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Levi13</td>
+      <td>Absolute error in minimum value</td>
+      <td>0.000549385 ± 0.00774979</td>
+      <td>7.40726e-29 ± 1.12104e-44</td>
+      <td>3.41704e-13 ± 1.00974e-28</td>
+      <td>9.15545e-13 ± 2.7229e-12</td>
+      <td>0.109874 ± 1.40844e-17</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Matyas</td>
+      <td>Absolute error in minimum value</td>
+      <td>2.40332e-08 ± 2.76292e-08</td>
+      <td>0 ± 0</td>
+      <td>0 ± 0</td>
+      <td>2.70124e-11 ± 6.5615e-11</td>
+      <td>0 ± 0</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>McCormick</td>
+      <td>Absolute error in minimum value</td>
+      <td>4.36388e-09 ± 8.30125e-09</td>
+      <td>1.05453e-11 ± 7.3735e-11</td>
+      <td>1.88738e-14 ± 0</td>
+      <td>4.36099e-12 ± 9.04694e-12</td>
+      <td>2.22045e-16 ± 0</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>Schaffer2</td>
+      <td>Absolute error in minimum value</td>
+      <td>0.0118056 ± 0.0130994</td>
+      <td>0 ± 0</td>
+      <td>0 ± 0</td>
+      <td>1.35978e-08 ± 1.67311e-08</td>
+      <td>0 ± 0</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>Schaffer4</td>
+      <td>Absolute error in minimum value</td>
+      <td>0.00689748 ± 0.00692663</td>
+      <td>1.29749e-05 ± 0.000128875</td>
+      <td>0.208555 ± 0</td>
+      <td>6.49546e-06 ± 9.13489e-05</td>
+      <td>0.00516557 ± 0.0075442</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>ThreeHumpCamel</td>
+      <td>Absolute error in minimum value</td>
+      <td>6.11675e-09 ± 2.82994e-08</td>
+      <td>0.00149319 ± 0.0210641</td>
+      <td>0 ± 0</td>
+      <td>1.95634e-12 ± 5.38546e-12</td>
+      <td>0 ± 0</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>Ackley</td>
+      <td>No. objective function evaluations</td>
+      <td>8576.99 ± 176.203</td>
+      <td>3038.4 ± 132.536</td>
+      <td>48 ± 0</td>
+      <td>4241.6 ± 60.5175</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>Beale</td>
+      <td>No. objective function evaluations</td>
+      <td>6396.13 ± 414.372</td>
+      <td>3557.8 ± 454.807</td>
+      <td>49 ± 0</td>
+      <td>4076.21 ± 42.3909</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>Booth</td>
+      <td>No. objective function evaluations</td>
+      <td>4977.61 ± 554.21</td>
+      <td>3393.3 ± 150.12</td>
+      <td>16 ± 0</td>
+      <td>4016.26 ± 0.836645</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>Bukin6</td>
+      <td>No. objective function evaluations</td>
+      <td>7410.93 ± 816.953</td>
+      <td>2616.15 ± 370.441</td>
+      <td>42 ± 0</td>
+      <td>4229.52 ± 47.045</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>CrossInTray</td>
+      <td>No. objective function evaluations</td>
+      <td>5532.8 ± 94.1847</td>
+      <td>414.51 ± 67.4007</td>
+      <td>5 ± 0</td>
+      <td>4036.25 ± 13.4089</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>Easom</td>
+      <td>No. objective function evaluations</td>
+      <td>5246.35 ± 235.562</td>
+      <td>665.19 ± 396.996</td>
+      <td>8 ± 0</td>
+      <td>4037.01 ± 24.0047</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>Eggholder</td>
+      <td>No. objective function evaluations</td>
+      <td>6808.61 ± 454.891</td>
+      <td>884.85 ± 288.073</td>
+      <td>47 ± 0</td>
+      <td>4093.01 ± 37.3101</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>GoldsteinPrice</td>
+      <td>No. objective function evaluations</td>
+      <td>6244.67 ± 318.626</td>
+      <td>527.535 ± 57.9933</td>
+      <td>67 ± 0</td>
+      <td>4078.09 ± 26.1124</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>Himmelblau</td>
+      <td>No. objective function evaluations</td>
+      <td>6000.78 ± 351.811</td>
+      <td>3119.85 ± 149.832</td>
+      <td>52 ± 0</td>
+      <td>4036.18 ± 8.76153</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>Hoelder</td>
+      <td>No. objective function evaluations</td>
+      <td>6222.28 ± 136.387</td>
+      <td>526.41 ± 89.5976</td>
+      <td>5 ± 0</td>
+      <td>4052.57 ± 18.7263</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>Levi13</td>
+      <td>No. objective function evaluations</td>
+      <td>6572.53 ± 319.804</td>
+      <td>2992.2 ± 128.652</td>
+      <td>17 ± 0</td>
+      <td>4165.81 ± 52.9685</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>Matyas</td>
+      <td>No. objective function evaluations</td>
+      <td>5648.34 ± 106.446</td>
+      <td>3530.4 ± 145.534</td>
+      <td>8 ± 0</td>
+      <td>4022.78 ± 3.62789</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>McCormick</td>
+      <td>No. objective function evaluations</td>
+      <td>5653.29 ± 166.79</td>
+      <td>327.6 ± 41.6579</td>
+      <td>33 ± 0</td>
+      <td>4032.09 ± 12.4606</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>Schaffer2</td>
+      <td>No. objective function evaluations</td>
+      <td>7988.47 ± 652.809</td>
+      <td>2626.95 ± 253.28</td>
+      <td>8 ± 0</td>
+      <td>5026.81 ± 386.077</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>30</th>
+      <td>Schaffer4</td>
+      <td>No. objective function evaluations</td>
+      <td>7350.77 ± 568.017</td>
+      <td>2265.53 ± 357.684</td>
+      <td>5 ± 0</td>
+      <td>5001.83 ± 366.096</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>ThreeHumpCamel</td>
+      <td>No. objective function evaluations</td>
+      <td>5740.11 ± 96.0017</td>
+      <td>3025.71 ± 228.683</td>
+      <td>8 ± 0</td>
+      <td>4037.55 ± 13.7414</td>
+      <td>1000 ± 0</td>
+    </tr>
+    <tr>
+      <th>32</th>
+      <td>Ackley</td>
+      <td>RMSE in minimum position</td>
+      <td>5.21854e-11</td>
+      <td>0</td>
+      <td>1.27689e-10</td>
+      <td>5.48003e-09</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>33</th>
+      <td>Beale</td>
+      <td>RMSE in minimum position</td>
+      <td>0.000287367</td>
+      <td>1.19081</td>
+      <td>2.32872e-07</td>
+      <td>4.18046e-06</td>
+      <td>9.65307e-11</td>
+    </tr>
+    <tr>
+      <th>34</th>
+      <td>Booth</td>
+      <td>RMSE in minimum position</td>
+      <td>2.03075e-05</td>
+      <td>1.40433e-15</td>
+      <td>1.75613e-09</td>
+      <td>1.11487e-06</td>
+      <td>3.21743e-14</td>
+    </tr>
+    <tr>
+      <th>35</th>
+      <td>Bukin6</td>
+      <td>RMSE in minimum position</td>
+      <td>1.26782</td>
+      <td>2.55073</td>
+      <td>5.13757</td>
+      <td>2.87993</td>
+      <td>4.96549</td>
+    </tr>
+    <tr>
+      <th>36</th>
+      <td>CrossInTray</td>
+      <td>RMSE in minimum position</td>
+      <td>0.000912576</td>
+      <td>1.95852e-05</td>
+      <td>12.2338</td>
+      <td>1.86698e-05</td>
+      <td>4.844e-08</td>
+    </tr>
+    <tr>
+      <th>37</th>
+      <td>Easom</td>
+      <td>RMSE in minimum position</td>
+      <td>2.38856</td>
+      <td>34.4445</td>
+      <td>4.44288</td>
+      <td>3.04629</td>
+      <td>2.25685</td>
+    </tr>
+    <tr>
+      <th>38</th>
+      <td>Eggholder</td>
+      <td>RMSE in minimum position</td>
+      <td>12.7697</td>
+      <td>622.424</td>
+      <td>87.9411</td>
+      <td>321.189</td>
+      <td>441.267</td>
+    </tr>
+    <tr>
+      <th>39</th>
+      <td>GoldsteinPrice</td>
+      <td>RMSE in minimum position</td>
+      <td>2.11788e-07</td>
+      <td>1.98209e-07</td>
+      <td>3.96345e-09</td>
+      <td>6.64752e-08</td>
+      <td>1.08606e-08</td>
+    </tr>
+    <tr>
+      <th>40</th>
+      <td>Himmelblau</td>
+      <td>RMSE in minimum position</td>
+      <td>2.4281e-06</td>
+      <td>4.39503e-13</td>
+      <td>1.18646e-08</td>
+      <td>1.45835e-07</td>
+      <td>6.2836e-13</td>
+    </tr>
+    <tr>
+      <th>41</th>
+      <td>Hoelder</td>
+      <td>RMSE in minimum position</td>
+      <td>9.43103e-06</td>
+      <td>3.02968e-07</td>
+      <td>1.97369</td>
+      <td>1.22394e-06</td>
+      <td>4.04153e-09</td>
+    </tr>
+    <tr>
+      <th>42</th>
+      <td>Levi13</td>
+      <td>RMSE in minimum position</td>
+      <td>0.023308</td>
+      <td>1.25607e-15</td>
+      <td>9.65751e-08</td>
+      <td>8.00848e-07</td>
+      <td>0.329619</td>
+    </tr>
+    <tr>
+      <th>43</th>
+      <td>Matyas</td>
+      <td>RMSE in minimum position</td>
+      <td>0.000805695</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.08041e-05</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>44</th>
+      <td>McCormick</td>
+      <td>RMSE in minimum position</td>
+      <td>6.15785e-05</td>
+      <td>3.48803e-06</td>
+      <td>1.3571e-07</td>
+      <td>2.17942e-06</td>
+      <td>1.0434e-08</td>
+    </tr>
+    <tr>
+      <th>45</th>
+      <td>Schaffer2</td>
+      <td>RMSE in minimum position</td>
+      <td>3.50743</td>
+      <td>2.25111e-07</td>
+      <td>0</td>
+      <td>0.00365322</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>46</th>
+      <td>Schaffer4</td>
+      <td>RMSE in minimum position</td>
+      <td>3.44748</td>
+      <td>0.0919158</td>
+      <td>140.538</td>
+      <td>0.0650658</td>
+      <td>2.82846</td>
+    </tr>
+    <tr>
+      <th>47</th>
+      <td>ThreeHumpCamel</td>
+      <td>RMSE in minimum position</td>
+      <td>7.82596e-05</td>
+      <td>0.138156</td>
+      <td>0</td>
+      <td>1.42317e-06</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>48</th>
+      <td>Ackley</td>
+      <td>Running time (s)</td>
+      <td>0.194699 ± 0.0091762</td>
+      <td>0.136731 ± 0.00771261</td>
+      <td>0.0019558 ± 7.03668e-05</td>
+      <td>0.169032 ± 0.00342567</td>
+      <td>0.123331 ± 0.00756531</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>Beale</td>
+      <td>Running time (s)</td>
+      <td>0.105218 ± 0.00707113</td>
+      <td>0.130231 ± 0.0169458</td>
+      <td>0.00226141 ± 8.29732e-05</td>
+      <td>0.130878 ± 0.0021411</td>
+      <td>0.106606 ± 0.0150035</td>
+    </tr>
+    <tr>
+      <th>50</th>
+      <td>Booth</td>
+      <td>Running time (s)</td>
+      <td>0.0790456 ± 0.00814846</td>
+      <td>0.12185 ± 0.00547591</td>
+      <td>0.000772893 ± 4.74724e-05</td>
+      <td>0.132073 ± 0.00115621</td>
+      <td>0.140047 ± 0.0133844</td>
+    </tr>
+    <tr>
+      <th>51</th>
+      <td>Bukin6</td>
+      <td>Running time (s)</td>
+      <td>0.145132 ± 0.0128007</td>
+      <td>0.0961849 ± 0.0135922</td>
+      <td>0.00173284 ± 5.56661e-05</td>
+      <td>0.145661 ± 0.00215987</td>
+      <td>0.184148 ± 0.00831611</td>
+    </tr>
+    <tr>
+      <th>52</th>
+      <td>CrossInTray</td>
+      <td>Running time (s)</td>
+      <td>0.103123 ± 0.00266719</td>
+      <td>0.0169329 ± 0.00285452</td>
+      <td>0.000203024 ± 3.52149e-05</td>
+      <td>0.158838 ± 0.00327339</td>
+      <td>0.113502 ± 0.00182123</td>
+    </tr>
+    <tr>
+      <th>53</th>
+      <td>Easom</td>
+      <td>Running time (s)</td>
+      <td>0.0835069 ± 0.00529361</td>
+      <td>0.025963 ± 0.0156782</td>
+      <td>0.000507929 ± 5.71643e-05</td>
+      <td>0.162101 ± 0.00785693</td>
+      <td>0.1129 ± 0.00533852</td>
+    </tr>
+    <tr>
+      <th>54</th>
+      <td>Eggholder</td>
+      <td>Running time (s)</td>
+      <td>0.131299 ± 0.0103175</td>
+      <td>0.0345988 ± 0.0113945</td>
+      <td>0.00207532 ± 5.50494e-05</td>
+      <td>0.15351 ± 0.00374211</td>
+      <td>0.127043 ± 0.0106101</td>
+    </tr>
+    <tr>
+      <th>55</th>
+      <td>GoldsteinPrice</td>
+      <td>Running time (s)</td>
+      <td>0.126339 ± 0.00613071</td>
+      <td>0.0202089 ± 0.00227692</td>
+      <td>0.0030464 ± 8.54142e-05</td>
+      <td>0.151875 ± 0.0018572</td>
+      <td>0.115653 ± 0.00688414</td>
+    </tr>
+    <tr>
+      <th>56</th>
+      <td>Himmelblau</td>
+      <td>Running time (s)</td>
+      <td>0.0995971 ± 0.00597814</td>
+      <td>0.116414 ± 0.00578471</td>
+      <td>0.00227305 ± 6.34466e-05</td>
+      <td>0.137796 ± 0.00258497</td>
+      <td>0.131416 ± 0.0118758</td>
+    </tr>
+    <tr>
+      <th>57</th>
+      <td>Hoelder</td>
+      <td>Running time (s)</td>
+      <td>0.121996 ± 0.00441008</td>
+      <td>0.0208244 ± 0.00361332</td>
+      <td>0.000194668 ± 3.45897e-05</td>
+      <td>0.151544 ± 0.0034406</td>
+      <td>0.155759 ± 0.0115479</td>
+    </tr>
+    <tr>
+      <th>58</th>
+      <td>Levi13</td>
+      <td>Running time (s)</td>
+      <td>0.134737 ± 0.00731326</td>
+      <td>0.125021 ± 0.0057702</td>
+      <td>0.00088825 ± 4.59269e-05</td>
+      <td>0.158034 ± 0.00281079</td>
+      <td>0.112892 ± 0.00195005</td>
+    </tr>
+    <tr>
+      <th>59</th>
+      <td>Matyas</td>
+      <td>Running time (s)</td>
+      <td>0.075917 ± 0.00207509</td>
+      <td>0.124073 ± 0.00520895</td>
+      <td>0.000461158 ± 4.31414e-05</td>
+      <td>0.133018 ± 0.00246853</td>
+      <td>0.113898 ± 0.00507216</td>
+    </tr>
+    <tr>
+      <th>60</th>
+      <td>McCormick</td>
+      <td>Running time (s)</td>
+      <td>0.0836387 ± 0.00257361</td>
+      <td>0.0113337 ± 0.00152362</td>
+      <td>0.0015459 ± 5.78715e-05</td>
+      <td>0.13066 ± 0.00301789</td>
+      <td>0.121251 ± 0.011277</td>
+    </tr>
+    <tr>
+      <th>61</th>
+      <td>Schaffer2</td>
+      <td>Running time (s)</td>
+      <td>0.134394 ± 0.0134926</td>
+      <td>0.101029 ± 0.00946167</td>
+      <td>0.000484655 ± 4.15732e-05</td>
+      <td>0.177989 ± 0.0133331</td>
+      <td>0.114746 ± 0.00365902</td>
+    </tr>
+    <tr>
+      <th>62</th>
+      <td>Schaffer4</td>
+      <td>Running time (s)</td>
+      <td>0.134248 ± 0.0140652</td>
+      <td>0.0885495 ± 0.0141354</td>
+      <td>0.000199208 ± 3.19181e-05</td>
+      <td>0.186425 ± 0.0137854</td>
+      <td>1.28351 ± 0.881547</td>
+    </tr>
+    <tr>
+      <th>63</th>
+      <td>ThreeHumpCamel</td>
+      <td>Running time (s)</td>
+      <td>0.0874074 ± 0.00206883</td>
+      <td>0.112972 ± 0.00864208</td>
+      <td>0.000481749 ± 5.18526e-05</td>
+      <td>0.136752 ± 0.00153182</td>
+      <td>0.119929 ± 0.0115653</td>
+    </tr>
+  </tbody>
+</table>

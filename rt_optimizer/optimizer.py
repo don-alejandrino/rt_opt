@@ -224,7 +224,6 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
             )
             if rValue ** 2 > 0.9 and abs(slope / intercept) < eps_stat:
                 nit = n + 1
-                success_rt = True
                 if verbosity > 0:
                     print(f'Stationary state detected after {nit} steps.')
                 break
@@ -234,7 +233,6 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
             print(f'No stationary state could be detected after {niter_rt + 1} iterations. ' +
                   'Please try increasing niter or the stationarity detection threshold eps_stat.')
         nit = niter_rt + 1
-        success_rt = False
 
     if verbosity == 2:
         print('===================================================================================')
@@ -249,7 +247,7 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
     f_min_spsa = np.empty(n_best_selection)
     nfev_spsa = 0
     nit_spsa = 0
-    success_spsa = True
+    success_spsa = np.empty(n_best_selection)
     niter_spsa = niter - niter_rt
     trace_spsa = np.empty((niter_spsa, n_bacteria, n_dims))
     trace_spsa[:, sortIdx[n_best_selection:], :] = trace[-1, sortIdx[n_best_selection:], :]
@@ -272,14 +270,10 @@ def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, b
         nfev_spsa += nfev_spsa_single
         nit_spsa += nit_spsa_single
         nit_spsa_arr[n] = nit_spsa_single
-        if not success_spsa_single:
-            success_spsa = False
+        success_spsa[n] = success_spsa_single
         trace_spsa[:, sortIdx[n], :] = _pad_trace(trace_spsa_single, niter_spsa)
 
-    if success_rt:
-        result.success = success_spsa
-    else:
-        result.success = False
+    result.success = success_spsa.any()
     result.x = x_best_spsa[np.argmin(f_min_spsa)]
     result.fun = np.min(f_min_spsa)
     result.nfev = nfev + nfev_spsa

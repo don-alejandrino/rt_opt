@@ -1,7 +1,11 @@
+import itertools
 import time
 
 import dlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.style
+import pandas as pd
 from scipy.optimize import differential_evolution, shgo, dual_annealing
 from tqdm import tqdm
 
@@ -32,8 +36,7 @@ class lipoWrapper:
 
 
 if __name__ == '__main__':
-    n_dim = 2
-    n_runs = 100
+    n_runs = 200
     testproblems_2D = {'Ackley': Ackley(),
                        'Beale': Beale(),
                        'GoldsteinPrice': GoldsteinPrice(),
@@ -63,14 +66,10 @@ if __name__ == '__main__':
     print('Collecting optimizer statistics...')
     with tqdm(total=n_total_steps) as pbar:
         for n, (name, problem) in enumerate(testproblems_2D.items()):
-            # Run-and-tumble algorithm
-            if problem.bounds.lower is not None and problem.bounds.upper is not None:
-                x0 = np.array([problem.bounds.lower, problem.bounds.upper])
-                bounds = np.vstack((problem.bounds.lower, problem.bounds.upper)).T
-            else:
-                x0 = np.array([[-10, -10], [10, 10]])
-                bounds = None
 
+            # Run-and-tumble algorithm
+            x0 = np.array([problem.bounds.lower, problem.bounds.upper])
+            bounds = np.vstack((problem.bounds.lower, problem.bounds.upper)).T
             metrics_2D['Run-and-Tumble'][name] = {'runtime': [], 'nfev': [], 'x': [], 'f': []}
             for m in range(n_runs):
                 start = time.time()
@@ -105,10 +104,7 @@ if __name__ == '__main__':
                     axs[plot_row, plot_col].set_title(f'Problem: {name}', fontsize=10)
 
             # Differential Evolution algorithm
-            if problem.bounds.lower is not None and problem.bounds.upper is not None:
-                bounds = np.vstack((problem.bounds.lower, problem.bounds.upper)).T
-            else:
-                bounds = None
+            bounds = np.vstack((problem.bounds.lower, problem.bounds.upper)).T
             metrics_2D['Differential Evolution'][name] = {'runtime': [], 'nfev': [], 'x': [],
                                                           'f': []}
             for m in range(n_runs):
@@ -123,10 +119,7 @@ if __name__ == '__main__':
                 metrics_2D['Differential Evolution'][name]['f'].append(ret.fun)
 
             # SHGO algorithm
-            if problem.bounds.lower is not None and problem.bounds.upper is not None:
-                bounds = np.vstack((problem.bounds.lower, problem.bounds.upper)).T
-            else:
-                bounds = None
+            bounds = np.vstack((problem.bounds.lower, problem.bounds.upper)).T
             metrics_2D['SHGO'][name] = {'runtime': [], 'nfev': [], 'x': [], 'f': []}
             for m in range(n_runs):
                 start = time.time()
@@ -140,10 +133,7 @@ if __name__ == '__main__':
                 metrics_2D['SHGO'][name]['f'].append(ret.fun)
 
             # Dual Annealing algorithm
-            if problem.bounds.lower is not None and problem.bounds.upper is not None:
-                bounds = np.vstack((problem.bounds.lower, problem.bounds.upper)).T
-            else:
-                bounds = None
+            bounds = np.vstack((problem.bounds.lower, problem.bounds.upper)).T
             metrics_2D['Dual Annealing'][name] = {'runtime': [], 'nfev': [], 'x': [], 'f': []}
             for m in range(n_runs):
                 start = time.time()
@@ -158,14 +148,8 @@ if __name__ == '__main__':
 
             # LIPO algorithm
             nfev = 1000
-            if problem.bounds.lower is not None:
-                bounds_lower = problem.bounds.lower.tolist()
-            else:
-                bounds_lower = [-10, -10]
-            if problem.bounds.upper is not None:
-                bounds_upper = problem.bounds.upper.tolist()
-            else:
-                bounds_upper = [10, 10]
+            bounds_lower = problem.bounds.lower.tolist()
+            bounds_upper = problem.bounds.upper.tolist()
             lipoFun = lipoWrapper(problem.f)
             metrics_2D['LIPO'][name] = {'runtime': [], 'nfev': [], 'x': [], 'f': []}
             for m in range(n_runs):
@@ -179,21 +163,51 @@ if __name__ == '__main__':
                 metrics_2D['LIPO'][name]['x'].append(ret_lp[0])
                 metrics_2D['LIPO'][name]['f'].append(ret_lp[1])
 
+    # Finalize bacteria traces plot
     fig.subplots_adjust(wspace=0.3, hspace=0.4)
     fig.suptitle('Run-and-tumble bacteria traces', fontsize=14)
+    # ToDo: Save figure
     fig_manager = plt.get_current_fig_manager()
     fig_manager.window.showMaximized()
     plt.show()
 
-    # ToDo: Show statistics
+    # Calculate statistics
+    metric_names = ['Running time (mean) [s]',
+                    'Running time (std) [s]',
+                    'No. objective function evaluations (mean)',
+                    'No. objective function evaluations (std)',
+                    'RMSE in minimum position',
+                    'Absolute error in minimum value (mean)',
+                    'Absolute error in minimum value (std)']
+    display_metrics = ['Running time (s)',
+                       'No. objective function evaluations',
+                       'RMSE in minimum position',
+                       'Absolute error in minimum value']
+    algo_names = list(metrics_2D.keys())
+    problem_names = list(testproblems_2D.keys())
+
+    statistics_data = pd.DataFrame(columns=['Problem', 'Metric'] + algo_names)
+    statistics_data['Problem'] = list(
+        itertools.chain.from_iterable(
+            itertools.repeat(x, len(metric_names)) for x in problem_names
+        )
+    )
+    statistics_data['Metric'] = metric_names * len(problem_names)
+
+    table_data = pd.DataFrame(columns=['Problem', 'Metric'] + algo_names)
+    table_data['Problem'] = list(
+        itertools.chain.from_iterable(
+            itertools.repeat(x, len(display_metrics)) for x in problem_names
+        )
+    )
+    table_data['Metric'] = display_metrics * len(testproblems_2D)
+
     for algo, problem in metrics_2D.items():
-        print(f'{algo} algorithm:')
-        print('=================================')
-        for problem_name, metrics in problem.items():
-            print(f'{problem_name} problem:')
-            print('---------------------------------')
+        for n, (problem_name, metrics) in enumerate(problem.items()):
             mean_runtime = np.array(metrics['runtime']).mean()
+            std_runtime = np.array(metrics['runtime']).std()
             mean_nfev = np.array(metrics['nfev']).mean()
+            std_nfev = np.array(metrics['nfev']).std()
 
             true_min_pos = testproblems_2D[problem_name].min.x
             if isinstance(true_min_pos, tuple):  # More than one global minima
@@ -216,15 +230,101 @@ if __name__ == '__main__':
                     else:
                         errors[j] = 0
                 MAE_f = np.abs(errors).mean()
+                STDAE_f = np.abs(errors).std()
             else:
                 MAE_f = np.abs(np.array(metrics['f']) - true_min_val).mean()
+                STDAE_f = np.abs(np.array(metrics['f']) - true_min_val).std()
 
-            print(f'Mean running time: {mean_runtime}s')
-            print(f'Mean number of objective function evaluations: {mean_nfev}')
-            print(f'RMSE in minimum position: {RMSE_x}')
-            print(f'MAE in minimum value: {MAE_f}\n')
-            # ToDo: Show as table (rows: algorithms, columns: problems)
-            # ToDo: Plot as bar plot, for each of the four metrics (colors: algorithms,
-            #  x-axis: problems)
+            statistics_data.loc[len(metric_names) * n, algo] = mean_runtime
+            statistics_data.loc[len(metric_names) * n + 1, algo] = std_runtime
+            statistics_data.loc[len(metric_names) * n + 2, algo] = mean_nfev
+            statistics_data.loc[len(metric_names) * n + 3, algo] = std_nfev
+            statistics_data.loc[len(metric_names) * n + 4, algo] = RMSE_x
+            statistics_data.loc[len(metric_names) * n + 5, algo] = MAE_f
+            statistics_data.loc[len(metric_names) * n + 6, algo] = STDAE_f
+
+            table_data.loc[len(display_metrics) * n, algo] = '{0:g} ± {1:g}'.format(mean_runtime,
+                                                                                    std_runtime)
+            table_data.loc[len(display_metrics) * n + 1, algo] = '{0:g} ± {1:g}'.format(mean_nfev,
+                                                                                        std_nfev)
+            table_data.loc[len(display_metrics) * n + 2, algo] = '{0:g}'.format(RMSE_x)
+            table_data.loc[len(display_metrics) * n + 3, algo] = '{0:g} ± {1:g}'.format(MAE_f,
+                                                                                        STDAE_f)
+
+    # Export table data
+    html_table = table_data.sort_values(by=['Metric']).reset_index(drop=True).to_html()
+    with open('optimizer_statistics.html', 'w', encoding='utf-8') as file:
+        file.writelines('<meta charset="UTF-8">\n')
+        file.write(html_table)
+
+    # Plot metrics
+    fig, axs = plt.subplots(2, 2)
+    mpl.style.use('ggplot')
+
+    # Runtime metrics
+    mean_data = statistics_data[
+        statistics_data['Metric'] == 'Running time (mean) [s]'
+    ].drop(columns=['Metric']).set_index('Problem')
+
+    std_data = statistics_data[
+        statistics_data['Metric'] == 'Running time (std) [s]'
+    ].drop(columns=['Metric']).set_index('Problem')
+    std_data_asymmetric = []
+    for col in std_data:
+        std_data_asymmetric.append([np.zeros(std_data[col].shape), std_data[col].values])
+
+    mean_data.plot(kind='bar', yerr=std_data_asymmetric, log=True, ax=axs[0, 0],
+                   legend=False, rot=45)
+    axs[0, 0].set_ylabel('Running time (s)', fontsize=10)
+
+    # Function evaluation metrics
+    mean_data = statistics_data[
+        statistics_data['Metric'] == 'No. objective function evaluations (mean)'
+    ].drop(columns=['Metric']).set_index('Problem')
+
+    std_data = statistics_data[
+        statistics_data['Metric'] == 'No. objective function evaluations (std)'
+    ].drop(columns=['Metric']).set_index('Problem')
+    std_data_asymmetric = []
+    for col in std_data:
+        std_data_asymmetric.append([np.zeros(std_data[col].shape), std_data[col].values])
+
+    mean_data.plot(kind='bar', yerr=std_data_asymmetric, log=True, ax=axs[0, 1],
+                   legend=False, rot=45)
+    axs[0, 1].set_ylabel('No. objective function evaluations', fontsize=10)
+
+    # Minimum position error metrics
+    mean_data = statistics_data[
+        statistics_data['Metric'] == 'RMSE in minimum position'
+    ].drop(columns=['Metric']).set_index('Problem')
+
+    mean_data.plot(kind='bar', log=True, ax=axs[1, 0], legend=False, rot=45)
+    axs[1, 0].set_ylabel('RMSE in minimum position', fontsize=10)
+
+    # Minimum function value error metrics
+    mean_data = statistics_data[
+        statistics_data['Metric'] == 'Absolute error in minimum value (mean)'
+    ].drop(columns=['Metric']).set_index('Problem')
+
+    std_data = statistics_data[
+        statistics_data['Metric'] == 'Absolute error in minimum value (std)'
+    ].drop(columns=['Metric']).set_index('Problem')
+    std_data_asymmetric = []
+    for col in std_data:
+        std_data_asymmetric.append([np.zeros(std_data[col].shape), std_data[col].values])
+
+    mean_data.plot(kind='bar', yerr=std_data_asymmetric, log=True, ax=axs[1, 1],
+                   legend=False, rot=45)
+    axs[1, 1].set_ylabel('Absolute error in minimum value', fontsize=10)
+
+    # Finalize metrics plot
+    handles, labels = axs[1, 1].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper right')
+    fig.subplots_adjust(wspace=0.15, hspace=0.4)
+    fig.suptitle('Optimizer metrics', fontsize=14)
+    # ToDo: Save figure
+    fig_manager = plt.get_current_fig_manager()
+    fig_manager.window.showMaximized()
+    plt.show()
 
     # ToDo: 10- or 100-dimensional test functions

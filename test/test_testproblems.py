@@ -90,7 +90,7 @@ class Test_testproblems_2D(unittest.TestCase):
 
 class Test_testproblems_nD(unittest.TestCase):
     def setUp(self):
-        self.n_dims = 5
+        self.n_dims = 100
 
     def test_Rastrigin(self):
         testProb = Rastrigin(self.n_dims)

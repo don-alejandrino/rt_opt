@@ -1,6 +1,9 @@
 import unittest
 
-from rt_optimizer.testproblems import *
+import numpy as np
+
+from rt_optimizer import testproblems as tp
+from rt_optimizer import testproblems_shifted as tps
 
 
 def run_test(cls, testProb):
@@ -24,67 +27,133 @@ def run_test(cls, testProb):
 
 class Test_testproblems_2D(unittest.TestCase):
     def test_Ackley(self):
-        testProb = Ackley()
+        testProb = tp.Ackley()
         run_test(self, testProb)
 
     def test_Beale(self):
-        testProb = Beale()
+        testProb = tp.Beale()
         run_test(self, testProb)
 
     def test_GoldsteinPrice(self):
-        testProb = GoldsteinPrice()
+        testProb = tp.GoldsteinPrice()
         run_test(self, testProb)
 
     def test_Booth(self):
-        testProb = Booth()
+        testProb = tp.Booth()
         run_test(self, testProb)
 
     def test_Bukin6(self):
-        testProb = Bukin6()
+        testProb = tp.Bukin6()
         run_test(self, testProb)
 
     def test_Matyas(self):
-        testProb = Matyas()
+        testProb = tp.Matyas()
         run_test(self, testProb)
 
     def test_Levi13(self):
-        testProb = Levi13()
+        testProb = tp.Levi13()
         run_test(self, testProb)
 
     def test_Himmelblau(self):
-        testProb = Himmelblau()
+        testProb = tp.Himmelblau()
         run_test(self, testProb)
 
     def test_ThreeHumpCamel(self):
-        testProb = ThreeHumpCamel()
+        testProb = tp.ThreeHumpCamel()
         run_test(self, testProb)
 
     def test_Easom(self):
-        testProb = Easom()
+        testProb = tp.Easom()
         run_test(self, testProb)
 
     def test_CrossInTray(self):
-        testProb = CrossInTray()
+        testProb = tp.CrossInTray()
         run_test(self, testProb)
 
     def test_Eggholder(self):
-        testProb = Eggholder()
+        testProb = tp.Eggholder()
         run_test(self, testProb)
 
     def test_Hoelder(self):
-        testProb = Hoelder()
+        testProb = tp.Hoelder()
         run_test(self, testProb)
 
     def test_McCormick(self):
-        testProb = McCormick()
+        testProb = tp.McCormick()
         run_test(self, testProb)
 
     def test_Schaffer2(self):
-        testProb = Schaffer2()
+        testProb = tp.Schaffer2()
         run_test(self, testProb)
 
     def test_Schaffer4(self):
-        testProb = Schaffer4()
+        testProb = tp.Schaffer4()
+        run_test(self, testProb)
+
+
+class Test_testproblems_shifted_2D(unittest.TestCase):
+    def test_Ackley(self):
+        testProb = tps.Ackley()
+        run_test(self, testProb)
+
+    def test_Beale(self):
+        testProb = tps.Beale()
+        run_test(self, testProb)
+
+    def test_GoldsteinPrice(self):
+        testProb = tps.GoldsteinPrice()
+        run_test(self, testProb)
+
+    def test_Booth(self):
+        testProb = tps.Booth()
+        run_test(self, testProb)
+
+    def test_Bukin6(self):
+        testProb = tps.Bukin6()
+        run_test(self, testProb)
+
+    def test_Matyas(self):
+        testProb = tps.Matyas()
+        run_test(self, testProb)
+
+    def test_Levi13(self):
+        testProb = tps.Levi13()
+        run_test(self, testProb)
+
+    def test_Himmelblau(self):
+        testProb = tps.Himmelblau()
+        run_test(self, testProb)
+
+    def test_ThreeHumpCamel(self):
+        testProb = tps.ThreeHumpCamel()
+        run_test(self, testProb)
+
+    def test_Easom(self):
+        testProb = tps.Easom()
+        run_test(self, testProb)
+
+    def test_CrossInTray(self):
+        testProb = tps.CrossInTray()
+        run_test(self, testProb)
+
+    def test_Eggholder(self):
+        testProb = tps.Eggholder()
+        run_test(self, testProb)
+
+    def test_Hoelder(self):
+        testProb = tps.Hoelder()
+        run_test(self, testProb)
+
+    def test_McCormick(self):
+        testProb = tps.McCormick()
+        run_test(self, testProb)
+
+    def test_Schaffer2(self):
+        testProb = tps.Schaffer2()
+        run_test(self, testProb)
+
+    def test_Schaffer4(self):
+        testProb = tps.Schaffer4()
         run_test(self, testProb)
 
 
@@ -93,19 +162,40 @@ class Test_testproblems_nD(unittest.TestCase):
         self.n_dims = 100
 
     def test_Rastrigin(self):
-        testProb = Rastrigin(self.n_dims)
+        testProb = tp.Rastrigin(self.n_dims)
         run_test(self, testProb)
 
     def test_Sphere(self):
-        testProb = Sphere(self.n_dims)
+        testProb = tp.Sphere(self.n_dims)
         run_test(self, testProb)
 
     def test_Rosenbrock(self):
-        testProb = Rosenbrock(self.n_dims)
+        testProb = tp.Rosenbrock(self.n_dims)
         run_test(self, testProb)
 
     def test_StyblinskiTang(self):
-        testProb = StyblinskiTang(self.n_dims)
+        testProb = tp.StyblinskiTang(self.n_dims)
+        run_test(self, testProb)
+
+
+class Test_testproblems_shifted_nD(unittest.TestCase):
+    def setUp(self):
+        self.n_dims = 100
+
+    def test_Rastrigin(self):
+        testProb = tps.Rastrigin(self.n_dims)
+        run_test(self, testProb)
+
+    def test_Sphere(self):
+        testProb = tps.Sphere(self.n_dims)
+        run_test(self, testProb)
+
+    def test_Rosenbrock(self):
+        testProb = tps.Rosenbrock(self.n_dims)
+        run_test(self, testProb)
+
+    def test_StyblinskiTang(self):
+        testProb = tps.StyblinskiTang(self.n_dims)
         run_test(self, testProb)
 
 

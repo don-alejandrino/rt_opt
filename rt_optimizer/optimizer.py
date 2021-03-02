@@ -1,8 +1,12 @@
+import itertools
 import warnings
 
 import numpy as np
+from scipy import spatial, special
 from scipy.optimize import OptimizeResult
-from scipy.stats import stats
+
+from rt_optimizer.global_search import run_and_tumble
+from rt_optimizer.local_search import bgfs_b
 
 
 def _prepare_bounds(bounds, n_dims):
@@ -16,16 +20,54 @@ def _prepare_bounds(bounds, n_dims):
 
     if bounds is not None:
         bounds = np.array(bounds)
-        assert bounds.shape == (n_dims, 2), ('bounds has wrong shape. Expected shape: ' +
-                                             '(n_dims, 2), where n_dims is the dimensionality of ' +
-                                             'the problem.')
+        if n_dims is not None:
+            assert bounds.shape == (n_dims, 2), ('bounds has wrong shape. Expected shape: ' +
+                                                 '(n_dims, 2), where n_dims is the ' +
+                                                 'dimensionality of the problem.')
         bound_lower = bounds[:, 0]
         bound_upper = bounds[:, 1]
         assert (bound_upper > bound_lower).all(), ('Upper bound must always be larger than lower ' +
                                                    'bound.')
+
         return bound_lower, bound_upper
+
     else:
-        return None, None
+        assert n_dims is not None, 'If bounds is None, n_dims must be provided.'
+
+        return np.repeat(-np.inf, n_dims), np.repeat(np.inf, n_dims)
+
+
+def _prepare_x0(x0, n_bacteria_per_dim, n_reduced_dims):
+    """
+    ToDo: Write docstring
+
+    :param x0:
+    :param n_bacteria_per_dim:
+    :param n_reduced_dims:
+    :return:
+    """
+
+    x0 = np.array(x0)
+    if len(x0.shape) == 1:
+        n_dims = x0.shape[0]
+        n_bacteria = n_bacteria_per_dim ** min(n_dims, n_reduced_dims)
+        x0_population = np.tile(x0, (n_bacteria, 1))
+    elif len(x0.shape) == 2:
+        n_dims = x0.shape[1]
+        n_bacteria = x0.shape[0]
+        if n_bacteria != n_bacteria_per_dim ** min(n_dims, n_reduced_dims):
+            warnings.warn('The number of bacteria given by x0 does not match the number of ' +
+                          'bacteria given by the relation n_bacteria = ' +
+                          'n_bacteria_per_dim ** min(n_dims, n_reduced_dims). The latter implies ' +
+                          f'that n_bacteria = {n_bacteria_per_dim ** min(n_dims, n_reduced_dims)}, ' +
+                          f'whereas the former implies that n_bacteria = {n_bacteria}. Using ' +
+                          f'n_bacteria = {n_bacteria}.')
+        x0_population = x0.copy()
+    else:
+        raise ValueError('x0 must be an array of either the shape (n_bacteria, n_dims) or ' +
+                         '(n_dims,).')
+
+    return x0_population
 
 
 def _pad_trace(trace, targetLength):
@@ -43,348 +85,374 @@ def _pad_trace(trace, targetLength):
     return np.pad(trace, [(0, paddingLength), (0, 0)], mode="edge")
 
 
-def run_and_tumble(f, x0, bounds=None, alpha_start=None, alpha_decay_fac=1e-3, base_tumble_rate=0.1,
-                   stationarity_window=20, eps_stat=1e-2, n_best_selection=5, c_spsa=1e-6,
-                   a_spsa=None, gamma_spsa=0.101, alpha_spsa=0.602, A_fac_spsa=0.05,
-                   beta_1_adam=0.9, beta_2_adam=0.9, eps_gd=1e-10, niter=1000, n_bacteria=10,
-                   attraction=False, attraction_window=10, attraction_sigma=None,
-                   attraction_strength=0.5, verbosity=0):
+def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims=3, n_embeddings=10,
+                                  **optimizer_kwargs):
     """
     ToDo: Write docstring
 
     :param f:
-    :param x0:
     :param bounds:
-    :param alpha_start:
-    :param alpha_decay_fac:
-    :param base_tumble_rate:
-    :param stationarity_window:
-    :param eps_stat:
-    :param n_best_selection:
-    :param c_spsa:
-    :param a_spsa:
-    :param gamma_spsa:
-    :param alpha_spsa:
-    :param A_fac_spsa:
-    :param beta_1_adam:
-    :param beta_2_adam:
-    :param eps_gd:
-    :param niter:
-    :param n_bacteria:
-    :param attraction:
-    :param attraction_window:
-    :param attraction_sigma:
-    :param attraction_strength:
-    :param verbosity:
+    :param orig_dim:
+    :param n_reduced_dims:
+    :param n_embeddings:
+    :param num_random_trials:
+    :param optimizer_args:
     :return:
     """
 
-    niter_rt = niter // 2
-    assert niter_rt > stationarity_window, 'niter must be larger than stationarity_window.'
-    assert verbosity in [0, 1, 2], 'verbosity must be 0, 1, or 2.'
-    assert n_best_selection <= n_bacteria, 'n_best_selection must be less equal than n_bacteria.'
+    x = np.zeros(orig_dim)
+    x_best = x.copy()
+    f_best = np.inf
+    nfev = nit = 0
+    success_best = False
+    for i in range(n_embeddings):
+        A = np.random.normal(size=(orig_dim, n_reduced_dims - 1))
+
+        # Normalize rows of A
+        normalization_sum = A.sum(axis=1)
+        normalization_sum = np.where(normalization_sum == 0, 1, normalization_sum)
+        A = A / normalization_sum[:, np.newaxis]
+
+        def f_embedded(arg): return f(bounds(arg[0] * x + A.dot(arg[1:]))[0])
+
+        # Set up bounds callback
+        def bounds_embedded(arg):
+            bounds_hit = np.zeros(len(arg), dtype=bool)
+            x_proj, bounds_hit_orig = bounds(arg[0] * x + A.dot(arg[1:]))
+            if bounds_hit_orig.any():  # Boundary hit in original, non-embedded variable
+                arg[1:] = np.linalg.lstsq(A, x_proj - arg[0] * x, rcond=None)[0]
+                bounds_hit[1:] = (A[bounds_hit_orig] != 0).any(axis=0)
+
+            return arg, bounds_hit
+
+        # Set up y0
+        y0 = np.zeros((x0.shape[0], n_reduced_dims))
+        y0[:, 0] = 1
+        y0[:, 1:] = np.array([np.linalg.lstsq(A, x_orig - x, rcond=None)[0] for x_orig in x0])
+
+        # ToDo: Print info on embedding loop progress
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore', message='Found initial conditions outside the defined search domain.'
+            )
+            res_embedded = optimize(f_embedded, x0=y0, bounds=bounds_embedded, **optimizer_kwargs)
+        y = res_embedded.x
+        f_val = res_embedded.fun
+        nfev += res_embedded.nfev
+        nit += res_embedded.nit
+
+        x = bounds(y[0] * x + A.dot(y[1:]))[0]
+
+        if f_val < f_best:
+            f_best = f_val
+            x_best = x.copy()
+            success_best = res_embedded.success
 
     result = OptimizeResult()
-    x0 = np.array(x0)
-    if len(x0.shape) == 1:
-        n_dims = x0.shape[0]
-        x0_population = np.tile(x0, (n_bacteria, 1))
-    elif len(x0.shape) == 2 and x0.shape[0] == 2:
-        n_dims = x0.shape[1]
-        assert (x0[1] > x0[0]).all(), 'x0[1, i] > x0[0, i] must hold for all i.'
-        x0_population = np.random.uniform(x0[0], x0[1], size=(n_bacteria, n_dims))
-    else:
-        raise ValueError('x0 must be either a matrix of shape (2, n_dims) or a vector of size ' +
-                         'n_dims.')
-
-    bound_lower, bound_upper = _prepare_bounds(bounds, n_dims)
-
-    if alpha_start is not None:
-        auto_scale_alpha = False
-    else:
-        auto_scale_alpha = True
-        alpha_start = 1e-1
-    alpha_end = alpha_decay_fac * alpha_start
-
-    if attraction_sigma is not None:
-        auto_scale_sigma = False
-    else:
-        auto_scale_sigma = True
-        attraction_sigma = 1
-
-    if a_spsa is not None:
-        auto_scale_a = False
-    else:
-        auto_scale_a = True
-        a_spsa = 1e-2
-
-    x0_population_orig = x0_population.copy()
-    if bounds is not None:
-        x0_population = np.maximum(x0_population, bound_lower)
-        x0_population = np.minimum(x0_population, bound_upper)
-    if not np.array_equal(x0_population, x0_population_orig):
-        warnings.warn('Found initial conditions outside the defined search domain.')
-
-    max_scale = None
-    if bounds is not None:
-        domain_range = bound_upper - bound_lower
-        max_scale = np.max(np.where(np.isinf(domain_range), 0, domain_range))
-    elif len(x0_population.shape) == 2 and x0_population.shape[1] == 2:
-        domain_range = x0[1] - x0[0]
-        max_scale = np.max(np.where(np.isinf(domain_range), 0, domain_range))
-    if max_scale is not None and max_scale > 0:
-        if auto_scale_alpha:
-            alpha_start = alpha_start * max_scale
-            alpha_end = alpha_end * max_scale
-        if auto_scale_sigma:
-            attraction_sigma = attraction_sigma * max_scale
-        if auto_scale_a:
-            a_spsa = a_spsa * max_scale
-
-    x = x0_population.copy()
-    x_best = x0_population.copy()
-    x_old = x0_population.copy()
-    f_old = np.array([f(val) for val in x_old])
-    f_min = f_old.copy()
-    f_max = f_old.copy()
-    nfev = n_bacteria
-    trace = np.empty((niter_rt + 1, n_bacteria, n_dims))
-    trace[0] = x0_population.copy()
-    x_sum = x0_population.sum(axis=0)
-    x_mean_history = []
-
-    v = np.empty(x0_population.shape)
-    for m in range(n_bacteria):
-        v_m = np.random.uniform(-1, 1, n_dims)
-        while not v_m.any():
-            v_m = np.random.uniform(-1, 1, n_dims)
-        v_m = v_m / np.sqrt(np.sum(v_m ** 2))
-        v[m] = v_m
-
-    for n in range(niter_rt):
-        alpha = alpha_start + (alpha_end - alpha_start) * (n ** 2) / (niter_rt ** 2)
-
-        if attraction:
-            kernel = (x[:, None, None, :] -
-                      trace[None, (n + 1 - min(n, attraction_window)):(n + 1), :, :])
-            grad_attractant = (
-                    attraction_strength / 2 / (attraction_sigma ** 2) * kernel *
-                    np.exp(-(np.square(kernel) / 2 /
-                             (attraction_sigma ** 2)).sum(axis=3))[:, :, :, None]
-            ).sum(axis=(1, 2))
-        else:
-            grad_attractant = np.zeros(x.shape)
-
-        # Run
-        x = x_old + (v - grad_attractant) * alpha
-        if bounds is not None:
-            x = np.maximum(x, bound_lower)
-            x = np.minimum(x, bound_upper)
-        boundary_hit = np.where(((x == bound_lower) | (x == bound_upper)), True, False)
-        f_new = np.array([f(val) for val in x])
-        nfev += n_bacteria
-        trace[n + 1] = x.copy()
-
-        # Tumble
-        # We add a small constant (1e-9) to the denominator below, in order to account for the fact
-        # that a bacterium may be stuck at the boundary, in which case x[i, :] = x_old[i, :]
-        delta_f = (f_new - f_old) / (np.sqrt(np.sum((x - x_old) ** 2, axis=1)) + 1e-9)
-        # Avoid exp over/underflow
-        delta_f = np.maximum(np.minimum(delta_f, 100), -100)
-        tumble_rate = base_tumble_rate * np.exp(delta_f)
-        # Realistically, tumble_rate must be clipped to [0, 1]. However, the inequality below is not
-        # influenced by this clipping and we thus omit it in order to save computation time
-        for m, tr in enumerate(tumble_rate):
-            if boundary_hit[m].any() or np.random.uniform() > 1 - tr:
-                v_m = np.random.uniform(-1, 1, n_dims)
-                while not v_m.any():
-                    v_m = np.random.uniform(-1, 1, n_dims)
-                v_m = v_m / np.sqrt(np.sum(v_m ** 2))
-                v[m] = v_m
-
-        # Remember best results
-        x_best = np.where((f_new < f_min)[:, None], x, x_best)
-        f_min = np.minimum(f_new, f_min)
-        f_max = np.maximum(f_new, f_max)
-        x_old = x.copy()
-        f_old = f_new.copy()
-
-        if verbosity == 2:
-            for m in range(n_bacteria):
-                print('Run-and-tumble step {}, bacterium {}:\tx = {}, f(x) = {}'
-                      .format(n + 1, m, x[m], f_new[m]))
-
-        x_sum = x_sum + x.sum(axis=0)
-        x_mean = x_sum / n_bacteria / (n + 1)
-        x_mean_history.append(x_mean)
-        if (n + 1) % stationarity_window == 0:
-            window = np.array(x_mean_history[-stationarity_window:]).sum(axis=1)
-            slope, intercept, rValue, _pValue, _stdErr = stats.linregress(
-                np.linspace(0, 1, len(window)), window
-            )
-            if rValue ** 2 > 0.9 and abs(slope / intercept) < eps_stat:
-                nit = n + 1
-                if verbosity > 0:
-                    print(f'Stationary state detected after {nit} steps.')
-                break
-
-    else:
-        if verbosity > 0:
-            print(f'No stationary state could be detected after {niter_rt + 1} iterations. ' +
-                  'Please try increasing niter or the stationarity detection threshold eps_stat.')
-        nit = niter_rt + 1
-
-    if verbosity == 2:
-        print('===================================================================================')
-    if verbosity > 0:
-        print(f'Best result thus far is x = {x_best[np.argmin(f_min)]}, f(x) = {np.min(f_min)}. '
-              f'Starting SPSA gradient descent for the {n_best_selection} best bacteria.')
-
-    trace = trace[:(nit + 1)]
-    sortIdx = f_min.argsort()
-    x_best_selection = x_best[sortIdx[:n_best_selection]]
-    x_best_spsa = np.empty(x_best_selection.shape)
-    f_min_spsa = np.empty(n_best_selection)
-    nfev_spsa = 0
-    nit_spsa = 0
-    success_spsa = np.empty(n_best_selection)
-    niter_spsa = niter - niter_rt
-    trace_spsa = np.empty((niter_spsa, n_bacteria, n_dims))
-    trace_spsa[:, sortIdx[n_best_selection:], :] = trace[-1, sortIdx[n_best_selection:], :]
-    nit_spsa_arr = np.empty(n_best_selection)
-
-    for n, x0 in enumerate(x_best_selection):
-        if verbosity == 2:
-            print(f'Performing SPSA gradient descent for bacterium {n}.')
-        (x_spsa_single,
-         f_min_spsa_single,
-         nfev_spsa_single,
-         nit_spsa_single,
-         success_spsa_single,
-         trace_spsa_single) = adam_spsa(f, x0, bounds=bounds, c=c_spsa, a=a_spsa, gamma=gamma_spsa,
-                                        alpha=alpha_spsa, A_fac=A_fac_spsa, beta_1=beta_1_adam,
-                                        beta_2=beta_2_adam, eps=eps_gd, niter=niter_spsa,
-                                        verbosity=verbosity)
-        x_best_spsa[n] = x_spsa_single
-        f_min_spsa[n] = f_min_spsa_single
-        nfev_spsa += nfev_spsa_single
-        nit_spsa += nit_spsa_single
-        nit_spsa_arr[n] = nit_spsa_single
-        success_spsa[n] = success_spsa_single
-        trace_spsa[:, sortIdx[n], :] = _pad_trace(trace_spsa_single, niter_spsa)
-
-    result.success = success_spsa.any()
-    result.x = x_best_spsa[np.argmin(f_min_spsa)]
-    result.fun = np.min(f_min_spsa)
-    result.nfev = nfev + nfev_spsa
-    result.nit = nit + nit_spsa
-    trace_spsa = trace_spsa[:np.max(nit_spsa_arr).astype(int)]
-    result.trace = np.concatenate((trace, trace_spsa))
+    result.success = success_best
+    result.x = x_best
+    result.fun = f_best
+    result.nfev = nfev
+    result.nit = nit
+    result.trace = None
 
     return result
 
 
-def adam_spsa(f, x0, bounds=None, c=1e-3, a=1e-3, gamma=0.101, alpha=0.602, A_fac=0.05, beta_1=0.9,
-              beta_2=0.9, eps=1e-12, niter=1000, verbosity=0):
+def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsize_start=None,
+             stepsize_decay_fac=1e-3, base_tumble_rate=0.1, niter_rt=400, n_bacteria_per_dim=3,
+             stationarity_window=20, eps_stat=1e-3, attraction=False, attraction_window=10,
+             attraction_sigma=None, attraction_strength=0.5, bounds_reflection=False,
+             n_best_selection=3, c_gd=1e-6, a_gd=None, n_linesearch_gd=20, alpha_linesearch_gd=0.5,
+             beta_linesearch_gd=0.33, eps_abs_gd=1e-9, eps_rel_gd=1e-6, niter_gd=100,
+             n_embeddings=5, max_dims=3, n_reduced_dims=2, verbosity=0):
     """
     ToDo: Write docstring
 
     :param f:
     :param x0:
     :param bounds:
-    :param c:
-    :param a:
-    :param gamma:
-    :param alpha:
-    :param A_fac:
-    :param beta_1:
-    :param beta_2:
-    :param eps:
-    :param niter:
+    :param domain_scale:
+    :param init:
+    :param stepsize_start:
+    :param stepsize_decay_fac:
+    :param base_tumble_rate:
+    :param niter_rt:
+    :param n_bacteria_per_dim:
+    :param stationarity_window:
+    :param eps_stat:
+    :param attraction:
+    :param attraction_window:
+    :param attraction_sigma:
+    :param attraction_strength:
+    :param bounds_reflection:
+    :param n_best_selection:
+    :param c_gd:
+    :param a_gd:
+    :param n_linesearch_gd:
+    :param alpha_linesearch_gd:
+    :param beta_linesearch_gd:
+    :param eps_abs_gd:
+    :param eps_rel_gd:
+    :param niter_gd:
+    :param n_embeddings:
+    :param max_dims:
+    :param n_reduced_dims:
     :param verbosity:
     :return:
     """
 
     assert verbosity in [0, 1, 2], 'verbosity must be 0, 1, or 2.'
+    assert n_reduced_dims >= 2, 'n_reduced_dims must not be less than 2.'
 
-    x0 = np.array(x0)
-    n_dims = len(x0)
-    A = A_fac * niter
-    m = v = 0
+    n_reduced_dims_eff = n_reduced_dims + 1
 
-    bound_lower, bound_upper = _prepare_bounds(bounds, n_dims)
+    if bounds is None or callable(bounds):
+        assert x0 is not None, ('If no box constraints are provided for bounds, x0 must not be ' +
+                                'None.')
+        x0_population = _prepare_x0(x0, n_bacteria_per_dim, n_reduced_dims_eff)
+        n_bacteria, n_dims = x0_population.shape
 
-    trace = np.empty((niter, n_dims))
-    f0 = f(x0)
-    nfev = 1
-    f_best = f0
-    x_best = x0.copy()
-    x = x0.copy()
-    for k in range(niter):
-        ak = a / (k + 1 + A) ** alpha
-        ck = c / (k + 1) ** gamma
-        delta = 2 * np.round(np.random.uniform(0, 1, n_dims)) - 1
+        if bounds is None:
+            bound_lower, bound_upper = _prepare_bounds(bounds, n_dims)
 
-        # Boundary hit
-        if (x == bound_lower).any() or (x == bound_upper).any():
-            boundary_stuck = np.zeros(n_dims, dtype=bool)
-            idcs = np.argwhere((x == bound_lower) | (x == bound_upper))
-            for i in idcs:
-                delta_i = np.zeros(n_dims)
-                delta_i[i] = delta[i]
-                f_minus = f(x - ck * delta_i)
-                f_plus = f(x + ck * delta_i)
-                nfev += 2
-                if ((f_plus - f_minus <= 0 and x[i] == bound_upper[i]) or
-                        (f_plus - f_minus >= 0 and x[i] == bound_upper[i])):
-                    boundary_stuck[i] = True
-            delta = np.where(boundary_stuck, 0, delta)
+            def projection_callback(x):
+                x = np.clip(x, bound_lower, bound_upper)
+                bounds_hit = np.where(((x == bound_lower) | (x == bound_upper)), True, False)
+                return x, bounds_hit
 
-        f_minus = f(x - ck * delta)
-        f_plus = f(x + ck * delta)
-        nfev += 2
-        ghat = (f_plus - f_minus) / (2 * ck * np.where(delta == 0, np.inf, delta))
+            def projection_callback_population(x):
+                return projection_callback(x)
 
-        # Adam algorithm, with the true gradient replaced by the SPSA
-        m = beta_1 * m + (1 - beta_1) * ghat
-        v = beta_2 * v + (1 - beta_2) * np.power(ghat, 2)
-        m_hat = m / (1 - np.power(beta_1, k + 1))
-        v_hat = v / (1 - np.power(beta_2, k + 1))
-        x = x - ak * m_hat / (np.sqrt(v_hat) + 1e-9)
-
-        if bounds is not None:
-            x = np.maximum(x, bound_lower)
-            x = np.minimum(x, bound_upper)
-        f_new = f(x)
-        if f_new <= f_best:
-            f_best = f_new
-            x_best = x.copy()
         else:
-            if verbosity == 2:
-                print(f'Reducing a to {0.95 * a}.')
-            x = x_best.copy()
-            a *= 0.95
 
-        trace[k] = x.copy()
-        if verbosity == 2:
-            print('SPSA step {}:\tx = {}, ghat = {}'.format(k + 1, x, ghat))
+            def projection_callback(x):
+                return bounds(x)
 
-        if abs(f_plus - f_minus) < eps:
-            nit = k + 1
-            success = True
-            if verbosity > 0:
-                print(f'SPSA Gradient descent target accuracy reached after {nit} steps.')
-            break
+            def projection_callback_population(x):
+                out = np.array([projection_callback(x_single) for x_single in x])
+                return out[:, 0], out[:, 1]
+
+    elif isinstance(bounds, (list, np.ndarray)):
+        if x0 is not None:
+            x0_population = _prepare_x0(x0, n_bacteria_per_dim, n_reduced_dims_eff)
+            n_bacteria, n_dims = x0_population.shape
+            bound_lower, bound_upper = _prepare_bounds(bounds, n_dims)
+        else:
+            bound_lower, bound_upper = _prepare_bounds(bounds, None)
+            n_dims = len(bound_lower)
+            n_bacteria = n_bacteria_per_dim ** min(n_dims, n_reduced_dims_eff)
+            if n_dims > n_reduced_dims_eff:
+                init = 'random'
+                if verbosity > 0:
+                    warnings.warn('The option init="uniform" is only available for problems with ' +
+                                  f'dimensionality less than or equal to {n_reduced_dims_eff}. ' +
+                                  f'Since the current problem has dimensionality {n_dims}, init '
+                                  'was automatically set to "random".')
+            if init == 'random':
+                x0_population = np.random.uniform(bound_lower, bound_upper,
+                                                  size=(n_bacteria, n_dims))
+            elif init == 'uniform':
+                init_points = []
+                for i in range(n_dims):
+                    init_points.append(np.linspace(bound_lower[i], bound_upper[i],
+                                                   n_bacteria_per_dim))
+                x0_population = np.array(np.meshgrid(*init_points)).reshape(n_dims, -1).T
+            else:
+                raise ValueError('init must either be "random" or "uniform".')
+
+        def projection_callback(x):
+            x = np.clip(x, bound_lower, bound_upper)
+            bounds_hit = np.where(((x == bound_lower) | (x == bound_upper)), True, False)
+            return x, bounds_hit
+
+        def projection_callback_population(x):
+            return projection_callback(x)
 
     else:
-        if verbosity > 0:
-            print(f'Could not reach desired SPSA gradient descent accuracy after {niter + 1} ' +
-                  'iterations. Please try increasing niter or the SPSA gradient descent accuracy ' +
-                  'threshold.')
-        nit = niter + 1
-        success = False
-    f_final = f(x)
-    trace = trace[:nit]
-    nfev += 1
+        raise ValueError('bounds must either be None, an array or corresponding nested list of ' +
+                         'shape (n_dims, 2), or a custom callback function. See the docstring ' +
+                         'for details.')
 
-    return x, f_final, nfev, nit, success, trace
+    assert niter_rt > stationarity_window, 'niter_rt must be larger than stationarity_window.'
+    assert n_best_selection <= n_bacteria, 'n_best_selection must not be larger than n_bacteria.'
+
+    if stepsize_start is not None:
+        auto_scale_stepsize = False
+    else:
+        auto_scale_stepsize = True
+        stepsize_start = 1e-1
+    stepsize_end = stepsize_decay_fac * stepsize_start
+
+    if attraction_sigma is not None:
+        auto_scale_attraction_sigma = False
+    else:
+        auto_scale_attraction_sigma = True
+        attraction_sigma = 1
+
+    if a_gd is not None:
+        auto_scale_a_gd = False
+    else:
+        auto_scale_a_gd = True
+        a_gd = 1e-2
+
+    x0_population_orig = x0_population.copy()
+    x0_population, _ = projection_callback_population(x0_population)
+    if not np.array_equal(x0_population, x0_population_orig):
+        warnings.warn('Found initial conditions outside the defined search domain.')
+
+    max_scale = None
+    if domain_scale is not None:
+        max_scale = domain_scale
+    elif isinstance(bounds, (list, np.ndarray)):
+        # noinspection PyUnboundLocalVariable
+        domain_range = bound_upper - bound_lower
+        max_scale = np.max(np.where(np.isinf(domain_range), 0, domain_range))
+    if max_scale is not None and max_scale > 0:
+        if auto_scale_stepsize:
+            stepsize_start = stepsize_start * max_scale
+            stepsize_end = stepsize_end * max_scale
+        if auto_scale_attraction_sigma:
+            attraction_sigma = attraction_sigma * max_scale
+        if auto_scale_a_gd:
+            a_gd = a_gd * max_scale
+
+    if n_dims > max_dims:
+        return _sequential_random_embeddings(f,
+                                             x0_population,
+                                             projection_callback,
+                                             n_dims,
+                                             n_reduced_dims=n_reduced_dims_eff,
+                                             n_embeddings=n_embeddings,
+                                             domain_scale=max_scale,
+                                             init=init,
+                                             stepsize_start=stepsize_start,
+                                             stepsize_decay_fac=stepsize_decay_fac,
+                                             base_tumble_rate=base_tumble_rate,
+                                             niter_rt=niter_rt,
+                                             n_bacteria_per_dim=n_bacteria_per_dim,
+                                             stationarity_window=stationarity_window,
+                                             eps_stat=eps_stat,
+                                             attraction=attraction,
+                                             attraction_window=attraction_window,
+                                             attraction_sigma=attraction_sigma,
+                                             attraction_strength=attraction_strength,
+                                             bounds_reflection=bounds_reflection,
+                                             n_best_selection=n_best_selection,
+                                             c_gd=c_gd,
+                                             a_gd=a_gd,
+                                             n_linesearch_gd=n_linesearch_gd,
+                                             alpha_linesearch_gd=alpha_linesearch_gd,
+                                             beta_linesearch_gd=beta_linesearch_gd,
+                                             eps_abs_gd=eps_abs_gd,
+                                             eps_rel_gd=eps_rel_gd,
+                                             niter_gd=niter_gd,
+                                             verbosity=verbosity)
+
+    else:
+        x_best, f_best, nfev, nit, trace = run_and_tumble(f,
+                                                          x0_population,
+                                                          projection_callback_population,
+                                                          niter_rt,
+                                                          stepsize_start,
+                                                          stepsize_end,
+                                                          base_tumble_rate=base_tumble_rate,
+                                                          stationarity_window=stationarity_window,
+                                                          eps_stat=eps_stat,
+                                                          attraction=attraction,
+                                                          attraction_window=attraction_window,
+                                                          attraction_sigma=attraction_sigma,
+                                                          attraction_strength=attraction_strength,
+                                                          bounds_reflection=bounds_reflection,
+                                                          verbosity=verbosity)
+
+        if verbosity == 2:
+            print('===============================================================================')
+        if verbosity > 0:
+            print(f'Best result after run-and-tumble stage is x = {x_best[np.argmin(f_best)]}, ' +
+                  f'f(x) = {np.min(f_best)}. Starting local, gradient-based optimization for the ' +
+                  f'{n_best_selection} best bacteria.')
+
+        sortIdx = f_best.argsort()
+        x_best_selection = x_best[sortIdx[:n_best_selection]]
+        x_best_gd = np.empty(x_best_selection.shape)
+        f_min_gd = np.empty(n_best_selection)
+        nfev_gd = 0
+        nit_gd = 0
+        success_gd = np.empty(n_best_selection)
+        trace_gd = np.empty((niter_gd, n_bacteria, n_dims))
+        trace_gd[:, sortIdx[n_best_selection:], :] = trace[-1, sortIdx[n_best_selection:], :]
+        nit_gd_arr = np.empty(n_best_selection)
+        visited_points = trace.reshape(-1, n_dims)
+
+        for n, x_start in enumerate(x_best_selection):
+            if verbosity == 2:
+                print(f'Performing gradient descent for bacterium {n}.')
+
+            # Calculate quadratic function approximation around x_start
+            num_sampling_points = 2 * int(special.binom(n_dims + 2, 2))
+            # noinspection PyArgumentList,PyUnresolvedReferences
+            sampling_points = visited_points[
+                spatial.cKDTree(visited_points).query(x_start, num_sampling_points)[1]
+            ]
+            func_values = np.array([f(point) for point in sampling_points])
+            nfev += num_sampling_points
+            polynomial_powers = list(itertools.filterfalse(lambda prod: sum(list(prod)) > 2,
+                                                           itertools.product((0, 1, 2),
+                                                                             repeat=n_dims)))
+            sampling_matrix = np.stack([np.prod(sampling_points ** d, axis=1)
+                                        for d in polynomial_powers], axis=-1)
+            coeffs = np.linalg.lstsq(sampling_matrix, func_values, 2)[0]
+
+            # Calculate Hessian matrix from the quadratic approximation
+            H = np.ones((n_dims, n_dims))
+            square_powers = list(itertools.filterfalse(
+                lambda zipped_item: sum(list(zipped_item[0])) != 2, zip(polynomial_powers, coeffs))
+            )
+            for square_power, coeff in square_powers:
+                idcs_to_consider = np.argwhere(np.array(square_power) != 0)
+                if len(idcs_to_consider) == 1:  # Diagonal
+                    H[idcs_to_consider[0], idcs_to_consider[0]] = 0.5 * coeff
+                elif len(idcs_to_consider) == 2:  # Mixed derivatives
+                    H[idcs_to_consider[0], idcs_to_consider[1]] = coeff
+                    H[idcs_to_consider[1], idcs_to_consider[0]] = coeff
+                else:
+                    raise RuntimeError("Polynomial function approximation seems to be of higher "
+                                       "order than two. This shouldn't happen.")
+
+            (x_gd_single,
+             f_min_gd_single,
+             nfev_gd_single,
+             nit_gd_single,
+             success_gd_single,
+             trace_gd_single) = bgfs_b(f,
+                                       x_start,
+                                       projection_callback,
+                                       H_start=H,
+                                       a=a_gd,
+                                       c=c_gd,
+                                       niter=niter_gd,
+                                       n_linesearch=n_linesearch_gd,
+                                       alpha_linesearch=alpha_linesearch_gd,
+                                       beta_linesearch=beta_linesearch_gd,
+                                       eps_abs=eps_abs_gd,
+                                       eps_rel=eps_rel_gd,
+                                       verbosity=verbosity)
+            x_best_gd[n] = x_gd_single
+            f_min_gd[n] = f_min_gd_single
+            nfev_gd += nfev_gd_single
+            nit_gd += nit_gd_single
+            nit_gd_arr[n] = nit_gd_single
+            success_gd[n] = success_gd_single
+            trace_gd[:, sortIdx[n], :] = _pad_trace(trace_gd_single, niter_gd)
+
+        result = OptimizeResult()
+        result.success = success_gd.any()
+        result.x = x_best_gd[np.argmin(f_min_gd)]
+        result.fun = np.min(f_min_gd)
+        result.nfev = nfev + nfev_gd
+        result.nit = nit + nit_gd
+        trace_gd = trace_gd[:np.max(nit_gd_arr).astype(int)]
+        result.trace = np.concatenate((trace, trace_gd))
+
+        return result

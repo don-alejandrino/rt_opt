@@ -147,7 +147,7 @@ def calculate_optimizer_metrics(problems, plot_traces=False):
 
             # LIPO algorithm
             nfev = 500 * problem.ndims
-            lipoFun = lipoWrapper(problem.f)
+            lipoFun = LipoWrapper(problem.f)
             optimizer_results['LIPO'][name] = {'runtime': [], 'nfev': [], 'x': [], 'f': []}
             for m in range(n_runs):
                 start = time.time()
@@ -355,7 +355,7 @@ def show_statistics(problems, optimizer_results, ndims):
     plt.show()
 
 
-class lipoWrapper:
+class LipoWrapper:
     def __init__(self, fun):
         self.__fun = fun
 

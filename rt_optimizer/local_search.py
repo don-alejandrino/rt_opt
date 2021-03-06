@@ -3,10 +3,11 @@ from types import SimpleNamespace
 import numpy as np
 
 
-def bgfs_b(f, x0, projection_callback, H_start=None, a=1, c=1e-6, niter=100, n_linesearch=20,
+def bfgs_b(f, x0, projection_callback, H_start=None, a=1, c=1e-6, niter=100, n_linesearch=20,
            alpha_linesearch=0.5, beta_linesearch=0.5, eps_abs=1e-9, eps_rel=1e-6, verbosity=1):
     """
-    ToDo: Write docstring
+    Implementation of the BFGS algorithm for arbitrarily bounded search regions.
+    ToDo: Finish docstring
 
     :param f:
     :param x0:

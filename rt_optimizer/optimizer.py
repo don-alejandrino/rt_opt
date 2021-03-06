@@ -6,16 +6,17 @@ from scipy import spatial, special
 from scipy.optimize import OptimizeResult
 
 from rt_optimizer.global_search import run_and_tumble
-from rt_optimizer.local_search import bgfs_b
+from rt_optimizer.local_search import bfgs_b
 
 
 def _prepare_bounds(bounds, n_dims):
     """
-    ToDo: Write docstring
+    Check size and validity of a rectangular bounds object, and turn it into the required format for
+    the following calculations.
 
-    :param bounds:
-    :param n_dims:
-    :return:
+    :param bounds: [array-like object] Rectangular bounds object
+    :param n_dims: [int] Dimensionality of the problem
+    :return: (bound_lower [np.array], bound_upper [np.array])
     """
 
     if bounds is not None:
@@ -39,12 +40,16 @@ def _prepare_bounds(bounds, n_dims):
 
 def _prepare_x0(x0, n_bacteria_per_dim, n_reduced_dims):
     """
-    ToDo: Write docstring
+    Check and prepare initial conditions object x0. If x0 is a vector, i.e., if it has the shape
+    (n_dims,) it is duplicated times the total number of bacteria, which is given by
+    n_bacteria_per_dim ** min(n_dims, n_reduced_dims).
 
-    :param x0:
-    :param n_bacteria_per_dim:
-    :param n_reduced_dims:
-    :return:
+    :param x0: [array-like object] Initial conditions object. Must have the shape
+           (n_bacteria, n_dims) or (n_dims,)
+    :param n_bacteria_per_dim: [int] Number of bacteria for each dimension
+    :param n_reduced_dims: [int] Number of reduced dimensions used by the sequential random
+           embeddings algorithm
+    :return: Initial conditions for all bacteria [np.array of shape (n_bacteria, n_dims)]
     """
 
     x0 = np.array(x0)
@@ -86,19 +91,41 @@ def _pad_trace(trace, targetLength):
 
 
 def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims=3, n_embeddings=10,
-                                  **optimizer_kwargs):
+                                  verbosity=1, **optimizer_kwargs):
     """
-    ToDo: Write docstring
+    Implementation the Sequential Random Embeddings algorithm described in
+    +++++
+    H. Qian, Y.-Q. Hu, and Y. Yu, Derivative-Free Optimization of High-Dimensional Non-Convex
+    Functions by Sequential Random Embeddings, Proceedings of the Twenty-Fifth International Joint
+    Conference on Artificial Intelligence, AAAI Press (2016).
+    +++++
+    The idea is basically to reduce high-dimensional problems to low-dimensional ones by embedding
+    the original, high-dimensional search space ℝ^h into a low dimensional one, ℝ^l, by
+    sequentially applying the random linear transformation
+    x(n+1) = α(n+1)x(n) + A•y(n+1),    x ∈ ℝ^h, y ∈ ℝ^l, A ∈ N(0, 1)^(h×l), α ∈ ℝ
+    and minimizing the objective function f(αx + A•y) w.r.t. [a, y].
 
-    :param f:
-    :param bounds:
-    :param orig_dim:
-    :param n_reduced_dims:
-    :param n_embeddings:
-    :param num_random_trials:
-    :param optimizer_args:
-    :return:
+    :param f: [callable] Objective function
+    :param bounds: [callable] Bounds projection. The function bounds(x) must return a tuple
+           (x_projected, bounds_hit), where x_projected is the input variable x projected to the
+           defined the defined search region. That is, if x is within this region, it is returned
+           unchanged, whereas if it is outside this region, it is projected to the region's
+           boundaries. The second output, bounds_hit, indicates whether the boundary has been hit
+           for each component of x. If, for example, x is three-dimensional and has hit the search
+           region's boundaries in x_1 and x_2, but not in x_3, bounds_hit = [True, True, False].
+           Note that the search domain needs not necessarily be rectangular. Therefore, we define a
+           "boundary hit" in any component of x in the following way:
+           bounds_hit[i] = True iff either x + δê_i or x - δê_i is outside the defined search
+           domain ∀ δ ∈ ℝ⁺, where ê_i is the i_th unit vector
+    :param orig_dim: [int] Original dimension of the problem, ℝ^h
+    :param n_reduced_dims: [int] Dimension of the embedded problem, ℝ^(l+1)
+    :param n_embeddings: [int] Number of embedding iterations
+    :param verbosity: [int] Output verbosity. Must be 0, 1, or 2
+    :param optimizer_args: [dict] Arguments to pass to the actual optimization routine
+    :return: Best minimum of f found [scipy.optimize.OptimizeResult]
     """
+
+    assert verbosity in [0, 1, 2], 'verbosity must be 0, 1, or 2.'
 
     x = np.zeros(orig_dim)
     x_best = x.copy()
@@ -130,7 +157,12 @@ def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims=3, n_e
         y0[:, 0] = 1
         y0[:, 1:] = np.array([np.linalg.lstsq(A, x_orig - x, rcond=None)[0] for x_orig in x0])
 
-        # ToDo: Print info on embedding loop progress
+        if verbosity > 0:
+            infoMsg = f'\nEmbedding iteration {i}'
+            print(infoMsg)
+            print('-' * len(infoMsg))
+
+        optimizer_kwargs['verbosity'] = verbosity
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 'ignore', message='Found initial conditions outside the defined search domain.'
@@ -142,6 +174,9 @@ def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims=3, n_e
         nit += res_embedded.nit
 
         x = bounds(y[0] * x + A.dot(y[1:]))[0]
+
+        if verbosity > 0:
+            print(f'Random embedding gave x = {x}.')
 
         if f_val < f_best:
             f_best = f_val
@@ -242,7 +277,7 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
             bound_lower, bound_upper = _prepare_bounds(bounds, None)
             n_dims = len(bound_lower)
             n_bacteria = n_bacteria_per_dim ** min(n_dims, n_reduced_dims_eff)
-            if n_dims > n_reduced_dims_eff:
+            if init == 'uniform' and n_dims > n_reduced_dims_eff:
                 init = 'random'
                 if verbosity > 0:
                     warnings.warn('The option init="uniform" is only available for problems with ' +
@@ -318,12 +353,15 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
             a_gd = a_gd * max_scale
 
     if n_dims > max_dims:
+        if verbosity > 0:
+            print(f'Using sequential random embeddings in {n_reduced_dims} + 1 dimensions.')
         return _sequential_random_embeddings(f,
                                              x0_population,
                                              projection_callback,
                                              n_dims,
                                              n_reduced_dims=n_reduced_dims_eff,
                                              n_embeddings=n_embeddings,
+                                             verbosity=verbosity,
                                              domain_scale=max_scale,
                                              init=init,
                                              stepsize_start=stepsize_start,
@@ -346,8 +384,7 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
                                              beta_linesearch_gd=beta_linesearch_gd,
                                              eps_abs_gd=eps_abs_gd,
                                              eps_rel_gd=eps_rel_gd,
-                                             niter_gd=niter_gd,
-                                             verbosity=verbosity)
+                                             niter_gd=niter_gd)
 
     else:
         x_best, f_best, nfev, nit, trace = run_and_tumble(f,
@@ -425,7 +462,7 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
              nfev_gd_single,
              nit_gd_single,
              success_gd_single,
-             trace_gd_single) = bgfs_b(f,
+             trace_gd_single) = bfgs_b(f,
                                        x_start,
                                        projection_callback,
                                        H_start=H,

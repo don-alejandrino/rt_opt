@@ -455,6 +455,8 @@ class StyblinskiTang(TestProblem):
 
     @property
     def min(self):
+        # Depending on the choice of ndims, f(x_min) slightly varies. Hence, in general, we can give
+        # only a range within which f(x_min) is located
         d = {'x': np.repeat(-2.903534, self.ndims),
              'f': (-39.16617 * self.ndims, -39.16616 * self.ndims)}
         return SimpleNamespace(**d)

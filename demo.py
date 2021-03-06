@@ -1,5 +1,6 @@
 import itertools
 import time
+from os.path import join
 
 import dlib
 import matplotlib as mpl
@@ -12,6 +13,9 @@ from tqdm import tqdm
 
 from rt_optimizer.optimizer import optimize
 from rt_optimizer.testproblems_shifted import *
+
+
+SAVE_DIR = 'demo_results'
 
 
 def gridmap2d(fun, x_specs, y_specs):
@@ -30,11 +34,12 @@ def gridmap2d(fun, x_specs, y_specs):
 
 def calculate_optimizer_metrics(problems, plot_traces=False):
     """
-    ToDo: Write docstring
+    Let the global optimizers rt_optimizer, scipy's differential_evolution, scipy's dual_annealing,
+    and dlib's LIPO minimize a bunch of test functions and collect performance metrics.
 
-    :param problems:
-    :param plot_traces:
-    :return:
+    :param problems: [list<TestProblem instance>] List of test problems to be used
+    :param plot_traces: [bool] Whether to plot bacteria traces for the rt_optimizer
+    :return: Performance metrics [dict]
     """
 
     optimizer_results = {
@@ -163,7 +168,7 @@ def calculate_optimizer_metrics(problems, plot_traces=False):
         fig_manager = plt.get_current_fig_manager()
         fig_manager.window.showMaximized()
         fig.set_size_inches(25.6, 14.4)
-        plt.savefig('bacteria_traces.png', bbox_inches='tight', dpi=150)
+        plt.savefig(join(SAVE_DIR, 'bacteria_traces.png'), bbox_inches='tight', dpi=150)
         plt.show()
 
     return optimizer_results
@@ -171,12 +176,11 @@ def calculate_optimizer_metrics(problems, plot_traces=False):
 
 def show_statistics(problems, optimizer_results, ndims):
     """
-    ToDo: Write docstring
+    Calculate and display optimizer performance statistics.
 
-    :param problems:
-    :param optimizer_results:
-    :param ndims:
-    :return:
+    :param problems: [list<TestProblem instance>] List of test problems to be used
+    :param optimizer_results: [dict] Optimizer performance metrics
+    :param ndims: [int] Dimension of the test problems
     """
 
     metric_names = ['Running time (mean) [s]',
@@ -185,7 +189,8 @@ def show_statistics(problems, optimizer_results, ndims):
                     'No. objective function evaluations (std)',
                     'RMSE in minimum position',
                     'Absolute error in minimum value (mean)',
-                    'Absolute error in minimum value (std)']
+                    'Absolute error in minimum value (std)',
+                    'Finding rate of global minimum']
     display_metrics = ['Running time (s)',
                        'No. objective function evaluations',
                        'RMSE in minimum position',
@@ -240,8 +245,12 @@ def show_statistics(problems, optimizer_results, ndims):
                 MAE_f = np.abs(errors).mean()
                 STDAE_f = np.abs(errors).std()
             else:
-                MAE_f = np.abs(np.array(metrics['f']) - true_min_val).mean()
-                STDAE_f = np.abs(np.array(metrics['f']) - true_min_val).std()
+                errors = np.array(metrics['f']) - true_min_val
+                MAE_f = np.abs(errors).mean()
+                STDAE_f = np.abs(errors).std()
+
+            min_found = np.where(np.abs(errors) < 1e-9, 1, 0)
+            finding_rate = min_found.sum() / len(min_found)
 
             statistics_data.loc[len(metric_names) * n, algo] = mean_runtime
             statistics_data.loc[len(metric_names) * n + 1, algo] = std_runtime
@@ -250,6 +259,7 @@ def show_statistics(problems, optimizer_results, ndims):
             statistics_data.loc[len(metric_names) * n + 4, algo] = RMSE_x
             statistics_data.loc[len(metric_names) * n + 5, algo] = MAE_f
             statistics_data.loc[len(metric_names) * n + 6, algo] = STDAE_f
+            statistics_data.loc[len(metric_names) * n + 7, algo] = finding_rate
 
             table_data.loc[len(display_metrics) * n, algo] = '{0:g} ± {1:g}'.format(mean_runtime,
                                                                                     std_runtime)
@@ -258,10 +268,11 @@ def show_statistics(problems, optimizer_results, ndims):
             table_data.loc[len(display_metrics) * n + 2, algo] = '{0:g}'.format(RMSE_x)
             table_data.loc[len(display_metrics) * n + 3, algo] = '{0:g} ± {1:g}'.format(MAE_f,
                                                                                         STDAE_f)
+            table_data.loc[len(display_metrics) * n + 4, algo] = '{0:.3f}'.format(finding_rate)
 
     # Export table data
     html_table = table_data.sort_values(by=['Metric', 'Problem']).reset_index(drop=True).to_html()
-    with open(f'optimizer_statistics_{ndims}D.html', 'w', encoding='utf-8') as file:
+    with open(join(SAVE_DIR, f'optimizer_statistics_{ndims}D.html'), 'w', encoding='utf-8') as file:
         file.writelines('<meta charset="UTF-8">\n')
         file.write(html_table)
 
@@ -269,14 +280,14 @@ def show_statistics(problems, optimizer_results, ndims):
     fig, axs = plt.subplots(2, 2)
     mpl.style.use('ggplot')
 
-    # Runtime metrics
+    # Metric: Runtime
     mean_data = statistics_data[
         statistics_data['Metric'] == 'Running time (mean) [s]'
-        ].drop(columns=['Metric']).set_index('Problem')
+    ].drop(columns=['Metric']).set_index('Problem')
 
     std_data = statistics_data[
         statistics_data['Metric'] == 'Running time (std) [s]'
-        ].drop(columns=['Metric']).set_index('Problem')
+    ].drop(columns=['Metric']).set_index('Problem')
     std_data_asymmetric = []
     for col in std_data:
         std_data_asymmetric.append([np.zeros(std_data[col].shape), std_data[col].values])
@@ -287,14 +298,14 @@ def show_statistics(problems, optimizer_results, ndims):
     axs[0, 0].set_yscale("log", nonpositive="clip")
     axs[0, 0].set_ylabel('Running time (s)', fontsize=10)
 
-    # Function evaluation metrics
+    # Metric: No. function evaluations
     mean_data = statistics_data[
         statistics_data['Metric'] == 'No. objective function evaluations (mean)'
-        ].drop(columns=['Metric']).set_index('Problem')
+    ].drop(columns=['Metric']).set_index('Problem')
 
     std_data = statistics_data[
         statistics_data['Metric'] == 'No. objective function evaluations (std)'
-        ].drop(columns=['Metric']).set_index('Problem')
+    ].drop(columns=['Metric']).set_index('Problem')
     std_data_asymmetric = []
     for col in std_data:
         std_data_asymmetric.append([np.zeros(std_data[col].shape), std_data[col].values])
@@ -305,24 +316,23 @@ def show_statistics(problems, optimizer_results, ndims):
     axs[0, 1].set_yscale("log", nonpositive="clip")
     axs[0, 1].set_ylabel('No. objective function evaluations', fontsize=10)
 
-    # Minimum position error metrics
+    # Metric: Finding rate of global minimum
     mean_data = statistics_data[
-        statistics_data['Metric'] == 'RMSE in minimum position'
-        ].drop(columns=['Metric']).set_index('Problem')
+        statistics_data['Metric'] == 'Finding rate of global minimum'
+    ].drop(columns=['Metric']).set_index('Problem')
 
     axs[1, 0].grid(True, zorder=0)
     mean_data.plot(kind='bar', ax=axs[1, 0], legend=False, rot=45, zorder=3)
-    axs[1, 0].set_yscale("log", nonpositive="clip")
-    axs[1, 0].set_ylabel('RMSE in minimum position', fontsize=10)
+    axs[1, 0].set_ylabel('Finding rate of global minimum', fontsize=10)
 
-    # Minimum function value error metrics
+    # Metric: Minimum function value error
     mean_data = statistics_data[
         statistics_data['Metric'] == 'Absolute error in minimum value (mean)'
-        ].drop(columns=['Metric']).set_index('Problem')
+    ].drop(columns=['Metric']).set_index('Problem')
 
     std_data = statistics_data[
         statistics_data['Metric'] == 'Absolute error in minimum value (std)'
-        ].drop(columns=['Metric']).set_index('Problem')
+    ].drop(columns=['Metric']).set_index('Problem')
     std_data_asymmetric = []
     for col in std_data:
         std_data_asymmetric.append([np.zeros(std_data[col].shape), std_data[col].values])
@@ -339,7 +349,7 @@ def show_statistics(problems, optimizer_results, ndims):
     fig.subplots_adjust(wspace=0.15, hspace=0.4)
     fig.suptitle('Optimizer metrics', fontsize=14)
     fig.set_size_inches(25.6, 14.4)
-    plt.savefig(f'optimizer_statistics_{ndims}D.pdf', bbox_inches='tight')
+    plt.savefig(join(SAVE_DIR, f'optimizer_statistics_{ndims}D.pdf'), bbox_inches='tight')
     fig_manager = plt.get_current_fig_manager()
     fig_manager.window.showMaximized()
     plt.show()
@@ -390,5 +400,3 @@ if __name__ == '__main__':
 
     show_statistics(testproblems_2D, metrics_2D, 2)
     show_statistics(testproblems_15D, metrics_15D, 15)
-
-    # ToDo: New metric: How often (in percentage) is error in function value smaller than 1e-9?

@@ -87,7 +87,7 @@ class Sphere(TestProblem):
 
     @property
     def bounds(self):
-        d = {'lower': np.repeat(-2, self.ndims), 'upper': np.repeat(2, self.ndims)}
+        d = {'lower': np.repeat(-3, self.ndims), 'upper': np.repeat(3, self.ndims)}
         return SimpleNamespace(**d)
 
     @property

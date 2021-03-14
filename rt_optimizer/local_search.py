@@ -6,24 +6,46 @@ import numpy as np
 def bfgs_b(f, x0, projection_callback, H_start=None, a=1, c=1e-6, niter=100, n_linesearch=20,
            alpha_linesearch=0.5, beta_linesearch=0.5, eps_abs=1e-9, eps_rel=1e-6, verbosity=1):
     """
-    Implementation of the BFGS algorithm for arbitrarily bounded search regions.
-    ToDo: Finish docstring
+    Implementation of the BFGS algorithm for arbitrarily bounded search regions. An estimate of the
+    optimal step size for each iteration is found using a two-way-backtracking line search
+    algorithm.
 
-    :param f:
-    :param x0:
-    :param projection_callback:
-    :param H_start:
-    :param a:
-    :param c:
-    :param niter:
-    :param n_linesearch:
-    :param alpha_linesearch:
-    :param beta_linesearch:
-    :param eps_abs:
-    :param eps_rel:
-    :param verbosity:
-    :return:
+    :param f: [callable] Objective function. Must accept its argument x as numpy array
+    :param x0: [np.array] Initial condition
+    :param projection_callback: [callable] Bounds projection. The function bounds(x) must return a
+           tuple (x_projected, bounds_hit), where x_projected is the input variable x projected to
+           the defined the defined search region. That is, if x is within this region, it is
+           returned unchanged, whereas if it is outside this region, it is projected to the region's
+           boundaries. The second output, bounds_hit, indicates whether the boundary has been hit
+           for each component of x. If, for example, x is three-dimensional and has hit the search
+           region's boundaries in x_1 and x_2, but not in x_3, bounds_hit = [True, True, False].
+           Note that the search domain needs not necessarily be rectangular. Therefore, we define a
+           "boundary hit" in any component of x in the following way:
+           bounds_hit[i] = True iff either x + δê_i or x - δê_i is outside the defined search
+           domain ∀ δ ∈ ℝ⁺, where ê_i is the i_th unit vector
+    :param H_start: [np.array] Initial Hessian at x0
+    :param a: [float] Initial line search step size
+    :param c: [float] Numerical differentiation step size
+    :param niter: [int] Maximum number of BFGS iterations
+    :param n_linesearch: [int] Maximum number of linesearch steps in each iteration
+    :param alpha_linesearch: [float] Line search control parameter alpha, see description in
+           :func:`two_way_linesearch`. Must be in between 0 and 1
+    :param beta_linesearch: [float] Line search control parameter beta, see description in
+           :func:`two_way_linesearch`. Must be in between 0 and 1
+    :param eps_abs: [float] Absolute tolerance
+    :param eps_rel: [float] Relative tolerance
+    :param verbosity: [int] Output verbosity. Must be 0, 1, or 2
+    :return: (x_best, f_best, nfev, nit, success, trace), where
+             - x_best [np.array] is the best x found so far,
+             - f_best [float] is the corresponding objective function value,
+             - nfev [int] is the number of objective function evaluations taken,
+             - nit [int] is the number of BFGS iterations,
+             - success [bool] indicates whether the BGFS algorithm finished successfully, i.e,
+               whether absolute and relative tolerances were met, and
+             - trace [np.array] is the optimizer trace, i.e., contains all visited points of x
     """
+
+    assert verbosity in [0, 1, 2], 'verbosity must be 0, 1, or 2.'
 
     def calculate_gradient():
         gradient = np.zeros(n_dims)
@@ -66,7 +88,7 @@ def bfgs_b(f, x0, projection_callback, H_start=None, a=1, c=1e-6, niter=100, n_l
         # Calculate search direction
         d = -B.dot(grad)
 
-        # Calculate step size
+        # Calculate optimal step size and update x
         a_old = a
         ls_result = two_way_linesearch(f, x, grad, d, a, n_linesearch, f_curr, projection_callback,
                                        alpha_linesearch, beta_linesearch)
@@ -129,19 +151,34 @@ def bfgs_b(f, x0, projection_callback, H_start=None, a=1, c=1e-6, niter=100, n_l
 
 def two_way_linesearch(f, x, grad, d, a, niter, f_old, projection_callback, alpha, beta):
     """
-    ToDo: Write docstring
+    Implementation of a two-way-backtracking line search algorithm, as outlined in
+    +++++
+    T. T. Truong, T. H. Nguyen, Backtracking gradient descent method for general C1 functions, with
+    applications to Deep Learning, arXiv:1808.05160 (2018).
+    +++++
+    Here, we also include a projection of x onto a bounded subspace. The Armijo condition deciding
+    whether a stepsize a is accepted reads in this case:
+    f(P(x + a * d)) ≤ f(x) - alpha * ∇f(x)•(x - P(x + a * d)),
+    where d is the search direction and P the projection of x onto a bounded subspace.
 
-    :param f:
-    :param x:
-    :param grad:
-    :param d:
-    :param a:
-    :param niter:
-    :param f_old:
-    :param projection_callback:
-    :param alpha:
-    :param beta:
-    :return:
+    :param f: [callable] Objective function. Must accept its argument x as numpy array
+    :param x: [np.array] Current (starting) position
+    :param grad: [np.array] Gradient of f at the current (starting) position x
+    :param d: [np.array] Search direction
+    :param a: [float] Initial stepsize
+    :param niter: [int] Maximum number of line search iterations
+    :param f_old: [float] Objective function value at the beginning, f(x)
+    :param projection_callback: [callable] Bounds projection, see description of parameter
+           ``projection_callback`` in :func:`bfgs_b`
+    :param alpha: [float] Line search control parameter alpha. Must be in between 0 and 1
+    :param beta: [float] Line search control parameter beta. Must be in between 0 and 1
+    :return: Namespace object with the following attributes:
+             - success: [bool] Whether the line search exited successfully, i.e., whether a stepsize
+               fulfilling the above Armijo conditions was found
+             - x: [np.array] New position after the step
+             - f: [float] Objective function value at the new position
+             - a: [float] (Sub)optimal stepsize found by the algorithm
+             - nfev: [int] Number of objective function calls
     """
 
     nfev = 0
@@ -189,24 +226,54 @@ def two_way_linesearch(f, x, grad, d, a, niter, f_old, projection_callback, alph
 def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha=0.602, A_fac=0.05,
               beta_1=0.9, beta_2=0.9, eps=1e-15, niter=1000, verbosity=1):
     """
-    ToDo: Write docstring
+    Implementation of a Simultaneous Perturbation Stochastic Approximation (SPSA) gradient descent
+    algorithm, see
+    +++++
+    J. C. Spall, An Overview of the Simultaneous Perturbation Method for Efficient Optimization,
+    Johns Hopkins APL Technical Digest 19 (1998).
+    +++++
+    coupled with an Adaptive Moment Estimation (Adam), see
+    +++++
+    D. P. Kingma, J. Ba, Adam: A Method for Stochastic Optimization, arXiv:1412.6980 (2014).
+    +++++
+    In addition, here we allow to constrain the search region to a rectangular box. Please note that
+    this SPSA implementation was not designed to deal with noisy objective functions, but rather to
+    speed up high-dimensional local optimization with expensive cost functions (in n dimensions,
+    a standard central differences gradient approximation takes 2n objective function calls, whereas
+    the SPSA gradient approximation only takes 2, independent of the problem's dimensionality).
 
-    :param f:
-    :param x0:
-    :param bound_lower:
-    :param bound_upper:
-    :param c:
-    :param a:
-    :param gamma:
-    :param alpha:
-    :param A_fac:
-    :param beta_1:
-    :param beta_2:
-    :param eps:
-    :param niter:
-    :param verbosity:
-    :return:
+    :param f: [callable] Objective function. Must accept its argument x as numpy array
+    :param x0: [np.array] Initial condition
+    :param bound_lower: [np.array] Lower box constraints. Must have the same dimension as x0
+    :param bound_upper: [np.array] Upper box constraints. Must have the same dimension as x0
+    :param c: [float] Initial step size for estimating the gradient approximation
+    :param a: [float] Initial "gradient descent" step size
+    :param gamma: [float] SPSA gamma determining the decay of the step size for estimating the
+           gradient approximation over time. Must be > 0. The larger gamma, the faster the decay
+    :param alpha: [float] SPSA gamma determining the decay of the "gradient descent" step size over
+           time. Must be > 0. The larger alpha, the faster the decay
+    :param A_fac: [float] Offset factor for calculating the SPSA "gradient descent" step size decay.
+           Must be > 0. The larger A_fac, the smaller the step size
+    :param beta_1: [float] Adam "forgetting factor" for the previous gradient approximations. Must
+           be in between 0 and 1
+    :param beta_2: [float] Adam "forgetting factor" for the squares of the previous gradient
+           approximations. Must be in between 0 and 1
+    :param eps: [float] Absolute tolerance
+    :param niter: [int] Maximum number of iterations
+    :param verbosity: [int] Output verbosity. Must be 0, 1, or 2
+    :return: (x_best, f_best, nfev, nit, success, trace), where
+             - x_best [np.array] is the best x found so far,
+             - f_best [float] is the corresponding objective function value,
+             - nfev [int] is the number of objective function evaluations taken,
+             - nit [int] is the number of iterations,
+             - success [bool] indicates whether the algorithm finished successfully, i.e, whether
+               absolute tolerances were met, and
+             - trace [np.array] is the optimizer trace, i.e., contains all visited points of x
     """
+
+    assert verbosity in [0, 1, 2], 'verbosity must be 0, 1, or 2.'
+    assert bound_lower.shape == x0.shape, 'bound_lower and x0 must have the same dimensions.'
+    assert bound_upper.shape == x0.shape, 'bound_upper and x0 must have the same dimensions.'
 
     n_dims = len(x0)
     A = A_fac * niter
@@ -221,6 +288,8 @@ def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha
     for k in range(niter):
         ak = a / (k + 1 + A) ** alpha
         ck = c / (k + 1) ** gamma
+
+        # Choose stochastic perturbations for calculation gradient approximation
         delta = 2 * np.round(np.random.uniform(0, 1, n_dims)) - 1
 
         # Boundary hit
@@ -228,29 +297,39 @@ def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha
             boundary_stuck = np.zeros(n_dims, dtype=bool)
             idcs = np.argwhere((x == bound_lower) | (x == bound_upper))
             for i in idcs:
+                # Consider partial "derivatives" for each component of x
                 delta_i = np.zeros(n_dims)
                 delta_i[i] = delta[i]
                 f_minus = f(x - ck * delta_i)
                 f_plus = f(x + ck * delta_i)
                 nfev += 2
+
+                # Check whether following the objective function's gradient would lead to leaving
+                # the bounded domain
                 if ((f_plus - f_minus <= 0 and x[i] == bound_upper[i]) or
                         (f_plus - f_minus >= 0 and x[i] == bound_upper[i])):
                     boundary_stuck[i] = True
+
+            # "Projected" stochastic perturbations vector, with perturbations only parallel to the
+            # boundary
             delta = np.where(boundary_stuck, 0, delta)
 
+        # Calculate SPSA gradient approximation
         f_minus = f(x - ck * delta)
         f_plus = f(x + ck * delta)
         nfev += 2
         ghat = (f_plus - f_minus) / (2 * ck * np.where(delta == 0, np.inf, delta))
 
-        # Adam algorithm, with the true gradient replaced by the SPSA
+        # Adam algorithm, with the true gradient replaced by the SPSA gradient approximation
         m = beta_1 * m + (1 - beta_1) * ghat
         v = beta_2 * v + (1 - beta_2) * np.power(ghat, 2)
         m_hat = m / (1 - np.power(beta_1, k + 1))
         v_hat = v / (1 - np.power(beta_2, k + 1))
         x = x - ak * m_hat / (np.sqrt(v_hat) + 1e-9)
 
+        # Clip x to bounded region
         x = np.clip(x, bound_lower, bound_upper)
+
         f_new = f(x)
         nfev += 1
         if f_new <= f_best:
@@ -279,8 +358,6 @@ def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha
                   'threshold.')
         nit = niter + 1
         success = False
-    f_final = f(x)
     trace = trace[:nit]
-    nfev += 1
 
-    return x, f_final, nfev, nit, success, trace
+    return x_best, f_best, nfev, nit, success, trace

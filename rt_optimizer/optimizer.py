@@ -38,35 +38,41 @@ def _prepare_bounds(bounds, n_dims):
         return np.repeat(-np.inf, n_dims), np.repeat(np.inf, n_dims)
 
 
-def _prepare_x0(x0, n_bacteria_per_dim, n_reduced_dims):
+def _prepare_x0(x0, n_bacteria_per_dim, max_dims, n_reduced_dims_eff):
     """
-    Check and prepare initial conditions object x0. If x0 is a vector, i.e., if it has the shape
+    Check and prepare initial conditions object x0. If x0 is a vector, that is, if it has the shape
     (n_dims,) it is duplicated times the total number of bacteria, which is given by
-    n_bacteria_per_dim ** min(n_dims, n_reduced_dims).
+    i)  n_bacteria = n_bacteria_per_dim ** n_dims if n_dims <= max_dims or
+    ii) n_bacteria = n_bacteria_per_dim ** n_reduced_dims_eff if n_dims > max_dims.
 
     :param x0: [array-like object] Initial conditions object. Must have the shape
            (n_bacteria, n_dims) or (n_dims,)
     :param n_bacteria_per_dim: [int] Number of bacteria for each dimension
-    :param n_reduced_dims: [int] Number of reduced dimensions used by the sequential random
-           embeddings algorithm
+    :param max_dims: [int] Maximum dimension of problems to be solved without using Sequential
+           Random Embeddings
+    :param n_reduced_dims_eff: [int] Number of effective reduced dimensions used by the Sequential
+           Random Embeddings algorithm
     :return: Initial conditions for all bacteria [np.array of shape (n_bacteria, n_dims)]
     """
 
     x0 = np.array(x0)
     if len(x0.shape) == 1:
         n_dims = x0.shape[0]
-        n_bacteria = n_bacteria_per_dim ** min(n_dims, n_reduced_dims)
+        n_bacteria = (n_bacteria_per_dim ** n_dims if n_dims <= max_dims else
+                      n_bacteria_per_dim ** n_reduced_dims_eff)
         x0_population = np.tile(x0, (n_bacteria, 1))
     elif len(x0.shape) == 2:
         n_dims = x0.shape[1]
         n_bacteria = x0.shape[0]
-        if n_bacteria != n_bacteria_per_dim ** min(n_dims, n_reduced_dims):
+        n_bacteria_target = (n_bacteria_per_dim ** n_dims if n_dims <= max_dims else
+                             n_bacteria_per_dim ** n_reduced_dims_eff)
+        if n_bacteria != n_bacteria_target:
             warnings.warn('The number of bacteria given by x0 does not match the number of ' +
-                          'bacteria given by the relation n_bacteria = ' +
-                          'n_bacteria_per_dim ** min(n_dims, n_reduced_dims). The latter implies ' +
-                          f'that n_bacteria = {n_bacteria_per_dim ** min(n_dims, n_reduced_dims)}, ' +
-                          f'whereas the former implies that n_bacteria = {n_bacteria}. Using ' +
-                          f'n_bacteria = {n_bacteria}.')
+                          'bacteria given by the relation ' +
+                          'n_bacteria = n_bacteria_per_dim ** n_dims if n_dims <= max_dims else ' +
+                          'n_bacteria_per_dim ** (n_reduced_dims + 1). The latter implies that ' +
+                          f'n_bacteria = {n_bacteria_target}, whereas the former implies ' +
+                          f'that n_bacteria = {n_bacteria}. Using n_bacteria = {n_bacteria}.')
         x0_population = x0.copy()
     else:
         raise ValueError('x0 must be an array of either the shape (n_bacteria, n_dims) or ' +
@@ -90,7 +96,7 @@ def _pad_trace(trace, targetLength):
     return np.pad(trace, [(0, paddingLength), (0, 0)], mode="edge")
 
 
-def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims=3, n_embeddings=10,
+def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims_eff=3, n_embeddings=10,
                                   verbosity=1, **optimizer_kwargs):
     """
     Implementation the Sequential Random Embeddings algorithm described in
@@ -105,20 +111,11 @@ def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims=3, n_e
     x(n+1) = α(n+1)x(n) + A•y(n+1),    x ∈ ℝ^h, y ∈ ℝ^l, A ∈ N(0, 1)^(h×l), α ∈ ℝ
     and minimizing the objective function f(αx + A•y) w.r.t. [a, y].
 
-    :param f: [callable] Objective function
-    :param bounds: [callable] Bounds projection. The function bounds(x) must return a tuple
-           (x_projected, bounds_hit), where x_projected is the input variable x projected to the
-           defined the defined search region. That is, if x is within this region, it is returned
-           unchanged, whereas if it is outside this region, it is projected to the region's
-           boundaries. The second output, bounds_hit, indicates whether the boundary has been hit
-           for each component of x. If, for example, x is three-dimensional and has hit the search
-           region's boundaries in x_1 and x_2, but not in x_3, bounds_hit = [True, True, False].
-           Note that the search domain needs not necessarily be rectangular. Therefore, we define a
-           "boundary hit" in any component of x in the following way:
-           bounds_hit[i] = True iff either x + δê_i or x - δê_i is outside the defined search
-           domain ∀ δ ∈ ℝ⁺, where ê_i is the i_th unit vector
+    :param f: [callable] Objective function. Must accept its argument x as numpy array
+    :param bounds: [callable] Bounds projection, see description of parameter
+           ``projection_callback`` in :func:`local_search.bfgs_b`
     :param orig_dim: [int] Original dimension of the problem, ℝ^h
-    :param n_reduced_dims: [int] Dimension of the embedded problem, ℝ^(l+1)
+    :param n_reduced_dims_eff: [int] Effective dimension of the embedded problem, ℝ^(l+1)
     :param n_embeddings: [int] Number of embedding iterations
     :param verbosity: [int] Output verbosity. Must be 0, 1, or 2
     :param optimizer_args: [dict] Arguments to pass to the actual optimization routine
@@ -133,7 +130,7 @@ def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims=3, n_e
     nfev = nit = 0
     success_best = False
     for i in range(n_embeddings):
-        A = np.random.normal(size=(orig_dim, n_reduced_dims - 1))
+        A = np.random.normal(size=(orig_dim, n_reduced_dims_eff - 1))
 
         # Normalize rows of A
         normalization_sum = A.sum(axis=1)
@@ -153,7 +150,7 @@ def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims=3, n_e
             return arg, bounds_hit
 
         # Set up y0
-        y0 = np.zeros((x0.shape[0], n_reduced_dims))
+        y0 = np.zeros((x0.shape[0], n_reduced_dims_eff))
         y0[:, 0] = 1
         y0[:, 1:] = np.array([np.linalg.lstsq(A, x_orig - x, rcond=None)[0] for x_orig in x0])
 
@@ -202,39 +199,86 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
              beta_linesearch_gd=0.33, eps_abs_gd=1e-9, eps_rel_gd=1e-6, niter_gd=100,
              n_embeddings=5, max_dims=3, n_reduced_dims=2, verbosity=0):
     """
-    ToDo: Write docstring
+    Metaheuristic global optimization algorithm combining a bacterial run-and-tumble chemotactic
+    search with a local, gradient-based search around the best minimum candidate points.
+    The algorithm's goal is to find
+                                        min f(x), x ∈ Ω,
+    where f: Ω ⊂ ℝ^n → ℝ.
+    Since the chemotactic search becomes more and more ineffective with increasing problem
+    dimensionality, Sequential Random Embeddings are used to solve the optimization problems once
+    its dimensionality exceeds a given threshold.
 
-    :param f:
-    :param x0:
-    :param bounds:
-    :param domain_scale:
-    :param init:
-    :param stepsize_start:
-    :param stepsize_decay_fac:
-    :param base_tumble_rate:
-    :param niter_rt:
-    :param n_bacteria_per_dim:
-    :param stationarity_window:
-    :param eps_stat:
-    :param attraction:
-    :param attraction_window:
-    :param attraction_sigma:
-    :param attraction_strength:
-    :param bounds_reflection:
-    :param n_best_selection:
-    :param c_gd:
-    :param a_gd:
-    :param n_linesearch_gd:
-    :param alpha_linesearch_gd:
-    :param beta_linesearch_gd:
-    :param eps_abs_gd:
-    :param eps_rel_gd:
-    :param niter_gd:
-    :param n_embeddings:
-    :param max_dims:
-    :param n_reduced_dims:
-    :param verbosity:
-    :return:
+    :param f: [callable] Objective function. Must accept its argument x as numpy array
+    :param x0: [array-like object] Optional initial conditions object. Must have the shape
+           (n_bacteria, n_dims) or (n_dims,). If x0 == None, initial conditions are sampled randomly
+           or uniformly-spaced from Ω. Note that this only works if Ω is a rectangular box, i.e., if
+           no or non-rectangular bounds are imposed, x0 must not be None
+    :param bounds: [callable or array-like object] Defines the bounded domain Ω. If provided, must
+           be one of the following:
+           - Bounds projection callback, as defined in description of parameter
+             ``projection_callback`` in :func:`local_search.bfgs_b`
+           - Rectangular box constraints. For each component x_i of x,
+             bounds[i, 0] <= x_i <= bounds[i, 1], that is, bounds must have shape (n_dims, 2)
+    :param domain_scale: [float] Scale of the optimization problem. If not provided, the algorithm
+           tries to guess the scale from any provided rectangular box constraints. Used for
+           auto-scaling algorithm stepsizes
+    :param init: [string] Determines how initial bacteria positions are sampled from Ω if
+           x0 == None, see description of parameter ``x0``. Currently supported: 'random' and
+           'uniform'
+    :param stepsize_start: [float] See description of parameter ``stepsize_start`` in
+           :func:`global_search.run_and_tumble`. If not provided, the algorithm tries to auto-scale
+           this length to the problem's scale
+    :param stepsize_decay_fac: [float] Factor by which the run-and-tumble stepsize has decayed in
+           the last run-and-tumble iteration compared to its initial value
+    :param base_tumble_rate: [float] See description of parameter ``base_tumble_rate`` in
+           :func:`global_search.run_and_tumble`
+    :param niter_rt: [int] Maximum number of run-and-tumble iterations
+    :param n_bacteria_per_dim: [int] How many bacteria to spawn in each dimension. Note that the
+           total number of bacteria is
+           i)  n_bacteria = n_bacteria_per_dim ** n_dims if n_dims <= max_dims or
+           ii) n_bacteria = n_bacteria_per_dim ** (n_reduced_dims + 1) if n_dims > max_dims.
+           If x0 is provided with shape (n_bacteria, n_dims), n_bacteria should agree with this
+           relation.
+    :param stationarity_window: [int] See description of parameter ``stationarity_window`` in
+           :func:`global_search.run_and_tumble`
+    :param eps_stat: [float] See description of parameter ``stationarity_window`` in
+           :func:`global_search.run_and_tumble`
+    :param attraction: [bool] See description of parameter ``attraction`` in
+           :func:`global_search.run_and_tumble`
+    :param attraction_window: [int] See description of parameter ``attraction_window`` in
+           :func:`global_search.run_and_tumble`
+    :param attraction_sigma: [float] See description of parameter ``attraction_sigma`` in
+           :func:`global_search.run_and_tumble`. If not provided, the algorithm tries to auto-scale
+           this length to the problem's scale
+    :param attraction_strength: [float] See description of parameter ``attraction_strength`` in
+           :func:`global_search.run_and_tumble`
+    :param bounds_reflection: [bool] See description of parameter ``bounds_reflection`` in
+           :func:`global_search.run_and_tumble`
+    :param n_best_selection: [int] At the end of the run-and-tumble exploration stage, a local
+           gradient-based search is performed, starting from the best positions found thus far by
+           the n_best_selection best bacteria
+    :param c_gd: [float] See description of parameter ``c`` in :func:`local_search.bfgs_b`
+    :param a_gd: [float] See description of parameter ``a`` in :func:`local_search.bfgs_b`. If not
+           provided, the algorithm tries to auto-scale this length to the problem's scale
+    :param n_linesearch_gd: [int] See description of parameter ``n_linesearch`` in
+           :func:`local_search.bfgs_b`
+    :param alpha_linesearch_gd: [float] See description of parameter ``alpha_linesearch`` in
+           :func:`local_search.bfgs_b`
+    :param beta_linesearch_gd: [float] See description of parameter ``beta_linesearch`` in
+           :func:`local_search.bfgs_b`
+    :param eps_abs_gd: [float] See description of parameter ``eps_abs`` in
+           :func:`local_search.bfgs_b`
+    :param eps_rel_gd: [float] See description of parameter ``eps_rel`` in
+           :func:`local_search.bfgs_b`
+    :param niter_gd: [int] Maximum number of local, gradient-based search iterations
+    :param n_embeddings: [int] Number of embedding iterations when using Sequential Random
+           Embeddings. Only has an effect if n_dims > max_dims
+    :param max_dims: [int] Maximum dimension of problems to be solved without using Sequential
+           Random Embeddings
+    :param n_reduced_dims: [int] Dimension of the embedded problem. Only has an effect if
+           n_dims > max_dims
+    :param verbosity: [int] Output verbosity. Must be 0, 1, or 2
+    :return: Best minimum of f found [scipy.optimize.OptimizeResult]
     """
 
     assert verbosity in [0, 1, 2], 'verbosity must be 0, 1, or 2.'
@@ -245,7 +289,7 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
     if bounds is None or callable(bounds):
         assert x0 is not None, ('If no box constraints are provided for bounds, x0 must not be ' +
                                 'None.')
-        x0_population = _prepare_x0(x0, n_bacteria_per_dim, n_reduced_dims_eff)
+        x0_population = _prepare_x0(x0, n_bacteria_per_dim, max_dims, n_reduced_dims_eff)
         n_bacteria, n_dims = x0_population.shape
 
         if bounds is None:
@@ -270,20 +314,22 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
 
     elif isinstance(bounds, (list, np.ndarray)):
         if x0 is not None:
-            x0_population = _prepare_x0(x0, n_bacteria_per_dim, n_reduced_dims_eff)
+            x0_population = _prepare_x0(x0, n_bacteria_per_dim, max_dims, n_reduced_dims_eff)
             n_bacteria, n_dims = x0_population.shape
             bound_lower, bound_upper = _prepare_bounds(bounds, n_dims)
         else:
             bound_lower, bound_upper = _prepare_bounds(bounds, None)
             n_dims = len(bound_lower)
-            n_bacteria = n_bacteria_per_dim ** min(n_dims, n_reduced_dims_eff)
-            if init == 'uniform' and n_dims > n_reduced_dims_eff:
+            n_bacteria = (n_bacteria_per_dim ** n_dims if n_dims <= max_dims else
+                          n_bacteria_per_dim ** n_reduced_dims_eff)
+            if init == 'uniform' and n_dims > max_dims:
                 init = 'random'
                 if verbosity > 0:
                     warnings.warn('The option init="uniform" is only available for problems with ' +
-                                  f'dimensionality less than or equal to {n_reduced_dims_eff}. ' +
-                                  f'Since the current problem has dimensionality {n_dims}, init '
-                                  'was automatically set to "random".')
+                                  'dimensionality less than or equal to max_dims, which was ' +
+                                  f'set to {max_dims}. Since the current problem has ' +
+                                  f'dimensionality {n_dims}, init was automatically set to ' +
+                                  f'"random".')
             if init == 'random':
                 x0_population = np.random.uniform(bound_lower, bound_upper,
                                                   size=(n_bacteria, n_dims))
@@ -359,7 +405,7 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
                                              x0_population,
                                              projection_callback,
                                              n_dims,
-                                             n_reduced_dims=n_reduced_dims_eff,
+                                             n_reduced_dims_eff=n_reduced_dims_eff,
                                              n_embeddings=n_embeddings,
                                              verbosity=verbosity,
                                              domain_scale=max_scale,

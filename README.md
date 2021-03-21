@@ -19,15 +19,23 @@ dimensionality,
 to solve the optimization problem once its dimensionality exceeds a given threshold. The idea of
 Sequential Random Embeddings is basically to reduce high-dimensional problems to low-dimensional
 ones by embedding the original, high-dimensional search space ℝ<sup>n</sup> into a low dimensional
-one, ℝ<sup>l</sup>, by sequentially applying the random linear transformation
+one, ℝ<sup>m</sup>, by sequentially applying the random linear transformation
 
 <center>
-x<sub>n+1</sub> = α<sub>n+1</sub> x<sub>n</sub> + A • y<sub>n+1</sub>,<br>
-x ∈ ℝ<sup>n</sup>,&nbsp;&nbsp;&nbsp;&nbsp;y ∈ ℝ<sup>l</sup>,&nbsp;&nbsp;&nbsp;&nbsp;
-A ∈ N(0, 1)<sup>h×l</sup>,&nbsp;&nbsp;&nbsp;&nbsp;α ∈ ℝ,
+x<sub>0</sub> = 0<br>
+x<sub>k+1</sub> = α<sub>k+1</sub> x<sub>k</sub> + A • y<sub>k+1</sub>,<br>
+x ∈ ℝ<sup>n</sup>,&nbsp;&nbsp;&nbsp;&nbsp;y ∈ ℝ<sup>m</sup>,&nbsp;&nbsp;&nbsp;&nbsp;
+A ∈ N(0, 1)<sup>n×m</sup>,&nbsp;&nbsp;&nbsp;&nbsp;α ∈ ℝ,
 </center>
 
-and minimizing the objective function f(αx + A • y) w.r.t. (α, y).
+and minimizing the objective function f(α<sub>k+1</sub>x<sub>k</sub> + A • y<sub>k+1</sub>) w.r.t.
+(α<sub>k+1</sub>, y<sub>k+1</sub>) for each k in a given range.
+
+## Installation
+rt_opt can be most conveniently installed via pip:
+```
+pip install rt_opt
+```
 
 ## Usage
 For a quick start, try to find the global minimum of the

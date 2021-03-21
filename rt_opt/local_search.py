@@ -14,15 +14,15 @@ def bfgs_b(f, x0, projection_callback, H_start=None, a=1, c=1e-6, niter=100, n_l
     :param x0: [np.array] Initial condition
     :param projection_callback: [callable] Bounds projection. The function bounds(x) must return a
            tuple (x_projected, bounds_hit), where x_projected is the input variable x projected to
-           the defined the defined search region. That is, if x is within this region, it is
-           returned unchanged, whereas if it is outside this region, it is projected to the region's
-           boundaries. The second output, bounds_hit, indicates whether the boundary has been hit
-           for each component of x. If, for example, x is three-dimensional and has hit the search
-           region's boundaries in x_1 and x_2, but not in x_3, bounds_hit = [True, True, False].
-           Note that the search domain needs not necessarily be rectangular. Therefore, we define a
-           "boundary hit" in any component of x in the following way:
+           the defined search region. That is, if x is within this region, it is returned unchanged,
+           whereas if it is outside this region, it is projected to the region's boundaries. The
+           second output, bounds_hit, indicates whether the boundary has been hit for each component
+           of x. If, for example, x is three-dimensional and has hit the search region's boundaries
+           in x_1 and x_2, but not in x_3, bounds_hit = [True, True, False]. Note that the search
+           domain needs not necessarily be rectangular. Therefore, we define a "boundary hit" in any
+           component of x in the following way:
            bounds_hit[i] = True iff either x + δê_i or x - δê_i is outside the defined search
-           domain ∀ δ ∈ ℝ⁺, where ê_i is the i_th unit vector
+           domain ∀ δ ∈ ℝ⁺, where ê_i is the i-th unit vector
     :param H_start: [np.array] Initial Hessian at x0
     :param a: [float] Initial line search step size
     :param c: [float] Numerical differentiation step size

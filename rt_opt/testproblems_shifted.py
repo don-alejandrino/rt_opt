@@ -1,7 +1,7 @@
 # Same test problems as in testproblems.py, except here all global minima that lie at the origin are
 # shifted by 1 along each axis
 
-import rt_optimizer.testproblems as tp
+import rt_opt.testproblems as tp
 
 
 class Rastrigin(tp.Rastrigin):

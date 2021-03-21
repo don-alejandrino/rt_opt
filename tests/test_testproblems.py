@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
-from rt_optimizer import testproblems as tp
-from rt_optimizer import testproblems_shifted as tps
+from rt_opt import testproblems as tp
+from rt_opt import testproblems_shifted as tps
 
 
 def run_test(cls, testProb):

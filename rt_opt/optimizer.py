@@ -5,8 +5,8 @@ import numpy as np
 from scipy import spatial, special
 from scipy.optimize import OptimizeResult
 
-from rt_optimizer.global_search import run_and_tumble
-from rt_optimizer.local_search import bfgs_b
+from rt_opt.global_search import run_and_tumble
+from rt_opt.local_search import bfgs_b
 
 
 def _prepare_bounds(bounds, n_dims):
@@ -109,7 +109,7 @@ def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims_eff=3,
     the original, high-dimensional search space ℝ^h into a low dimensional one, ℝ^l, by
     sequentially applying the random linear transformation
     x(n+1) = α(n+1)x(n) + A•y(n+1),    x ∈ ℝ^h, y ∈ ℝ^l, A ∈ N(0, 1)^(h×l), α ∈ ℝ
-    and minimizing the objective function f(αx + A•y) w.r.t. [a, y].
+    and minimizing the objective function f(αx + A•y) w.r.t. (α, y).
 
     :param f: [callable] Objective function. Must accept its argument x as numpy array
     :param bounds: [callable] Bounds projection, see description of parameter
@@ -205,8 +205,8 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
                                         min f(x), x ∈ Ω,
     where f: Ω ⊂ ℝ^n → ℝ.
     Since the chemotactic search becomes more and more ineffective with increasing problem
-    dimensionality, Sequential Random Embeddings are used to solve the optimization problems once
-    its dimensionality exceeds a given threshold.
+    dimensionality, Sequential Random Embeddings are used to solve the optimization problem once its
+    dimensionality exceeds a given threshold.
 
     :param f: [callable] Objective function. Must accept its argument x as numpy array
     :param x0: [array-like object] Optional initial conditions object. Must have the shape

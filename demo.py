@@ -11,8 +11,8 @@ import pandas as pd
 from scipy.optimize import differential_evolution, dual_annealing
 from tqdm import tqdm
 
-from rt_optimizer.optimizer import optimize
-from rt_optimizer.testproblems_shifted import *
+from rt_opt.optimizer import optimize
+from rt_opt.testproblems_shifted import *
 
 
 SAVE_DIR = 'demo_results'
@@ -32,13 +32,14 @@ def gridmap2d(fun, x_specs, y_specs):
     return arr_x, arr_y, arr_z
 
 
-def calculate_optimizer_metrics(problems, plot_traces=False):
+def calculate_optimizer_metrics(problems, n_runs, plot_traces=False):
     """
-    Let the global optimizers rt_optimizer, scipy's differential_evolution, scipy's dual_annealing,
+    Let the global optimizers rt_opt, scipy's differential_evolution, scipy's dual_annealing,
     and dlib's LIPO minimize a bunch of test functions and collect performance metrics.
 
     :param problems: [list<TestProblem instance>] List of test problems to be used
-    :param plot_traces: [bool] Whether to plot bacteria traces for the rt_optimizer
+    :param n_runs: [int] How often each problem is solved by the different optimizers
+    :param plot_traces: [bool] Whether to plot bacteria traces for the rt_opt
     :return: Performance metrics [dict]
     """
 
@@ -364,7 +365,7 @@ class LipoWrapper:
 
 
 if __name__ == '__main__':
-    n_runs = 100
+    nruns = 100
     testproblems_2D = [
         Rastrigin(2),
         Ackley(),
@@ -395,8 +396,8 @@ if __name__ == '__main__':
         StyblinskiTang(15)
     ]
 
-    metrics_2D = calculate_optimizer_metrics(testproblems_2D, plot_traces=True)
-    metrics_15D = calculate_optimizer_metrics(testproblems_15D, plot_traces=False)
+    metrics_2D = calculate_optimizer_metrics(testproblems_2D, nruns, plot_traces=True)
+    metrics_15D = calculate_optimizer_metrics(testproblems_15D, nruns, plot_traces=False)
 
     show_statistics(testproblems_2D, metrics_2D, 2)
     show_statistics(testproblems_15D, metrics_15D, 15)

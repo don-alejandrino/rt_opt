@@ -99,7 +99,7 @@ def _pad_trace(trace, targetLength):
 def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims_eff=3, n_embeddings=10,
                                   verbosity=1, **optimizer_kwargs):
     """
-    Implementation the Sequential Random Embeddings algorithm described in
+    Implementation of the Sequential Random Embeddings algorithm described in
     +++++
     H. Qian, Y.-Q. Hu, and Y. Yu, Derivative-Free Optimization of High-Dimensional Non-Convex
     Functions by Sequential Random Embeddings, Proceedings of the Twenty-Fifth International Joint

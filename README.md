@@ -48,6 +48,10 @@ start = time.time()
 ret = optimize(problem.f, bounds=box_bounds)
 end = time.time()
 
+print(f'Function minimum found at x = {ret.x}, yielding f(x) = {ret.fun}.')
+print(f'Optimization took {end - start:.3f} seconds.')
+print(f'Optimization error is {np.abs(ret.fun - problem.min.f)}.')
+
 
 
 >>> Function minimum found at x = [512.         404.23180623], yielding f(x) = -959.6406627208495.

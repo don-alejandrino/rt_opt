@@ -15,7 +15,7 @@ from rt_opt.optimizer import optimize
 from rt_opt.testproblems_shifted import *
 
 
-SAVE_DIR = 'demo_results'
+SAVE_DIR = 'results'
 
 
 def gridmap2d(fun, x_specs, y_specs):

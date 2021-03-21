@@ -23,7 +23,7 @@ one, ℝ<sup>m</sup>, by sequentially applying the random linear transformation
 
 <p align="center">
 x<sub>0</sub> = 0<br>
-x<sub>k+1</sub> = α<sub>k+1</sub> x<sub>k</sub> + A • y<sub>k+1</sub>,<br>
+x<sub>k+1</sub> = α<sub>k+1</sub>x<sub>k</sub> + A • y<sub>k+1</sub>,<br>
 x ∈ ℝ<sup>n</sup>,&nbsp;&nbsp;&nbsp;&nbsp;y ∈ ℝ<sup>m</sup>,&nbsp;&nbsp;&nbsp;&nbsp;
 A ∈ N(0, 1)<sup>n×m</sup>,&nbsp;&nbsp;&nbsp;&nbsp;α ∈ ℝ,
 </p>

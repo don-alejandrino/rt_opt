@@ -39,7 +39,7 @@ pip install rt_opt
 
 ## Usage
 For a quick start, try to find the global minimum of the
-[Eggholder function](https://www.sfu.ca/~ssurjano/egg.html) within the square
+[Eggholder function](https://www.sfu.ca/~ssurjano/egg.html) within the default square
 x<sub>i</sub> ∈ [-512, 512] ∀ i = 1, 2:
 ```
 import time
@@ -74,7 +74,7 @@ where x_projected is the input variable x projected to the defined search region
 within this region, it is returned unchanged, whereas if it is outside this region, it is projected
 to the region's boundaries. The second output, bounds_hit, indicates whether the boundary has been
 hit for each component of x. If, for example, x is three-dimensional and has hit the search region's
-boundaries in x<sub>1</sub> and x<sub>3</sub>, but not in x<sub>3</sub>,
+boundaries in x<sub>1</sub> and x<sub>2</sub>, but not in x<sub>3</sub>,
 bounds_hit = [True, True, False]. Here, we define a "boundary hit" in any component of x in the
 following way:<br>
 bounds_hit[i] = True iff either x + δê<sub>i</sub> or x - δê<sub>i</sub> is outside
@@ -108,7 +108,7 @@ def bounds_circle(x):
 
 def gridmap2d(fun, x_specs, y_specs):
     """
-    Helper function for plotting the objective function
+    Helper function for plotting the objective function.
     """
 
     grid_x = np.linspace(*x_specs)
@@ -147,4 +147,13 @@ plt.show()
 
 >>> Function minimum found at x = [418.56055019 171.04305027], yielding f(x) = -629.6336812770477.
 ```
-![Example Trace](example_trace.png)
+![Example Trace](demo/example_trace.png)
+
+## Performance
+For a performance comparison of rt_opt with other global optimization algorithms, namely
+*differential_evolution* and *dual_annealing* from scipy, as well as dlib's
+[LIPO]( http://blog.dlib.net/2017/12/a-global-optimization-algorithm-worth.html )-based
+*find_min_global*, see [here](demo/results). The comparison results were obtained by running
+[demo.py](demo/demo.py), where each of these four algorithms was evaluated 100 times with default
+parameters on a couple of 2D and 15D test functions (details on these functions can be found 
+[here](https://en.wikipedia.org/wiki/Test_functions_for_optimization)).

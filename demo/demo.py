@@ -15,7 +15,7 @@ from rt_opt.optimizer import optimize
 from rt_opt.testproblems_shifted import *
 
 
-SAVE_DIR = 'results'
+SAVE_DIR = 'demo/results'
 
 
 def gridmap2d(fun, x_specs, y_specs):
@@ -195,7 +195,8 @@ def show_statistics(problems, optimizer_results, ndims):
     display_metrics = ['Running time (s)',
                        'No. objective function evaluations',
                        'RMSE in minimum position',
-                       'Absolute error in minimum value']
+                       'Absolute error in minimum value',
+                       'Finding rate of global minimum']
     algo_names = list(optimizer_results.keys())
     problems_dict = {prob.__class__.__name__: prob for prob in problems}
     problem_names = list(problems_dict.keys())

@@ -24,6 +24,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/demo/requirements.txt">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="$APPLICATION_CONFIG_DIR$/scratches/scratch_demo_box.py">
           <value>
             <Attribute>
@@ -46,6 +53,13 @@
           </value>
         </entry>
         <entry key="/main.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/rt_opt/requirements.txt">
           <value>
             <Attribute>
               <option name="separator" value="," />

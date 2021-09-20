@@ -140,13 +140,14 @@ def bfgs_b(f, x0, projection_callback, H_start=None, a=1, c=1e-6, niter=100, n_l
     else:
         if verbosity > 0:
             print(f'Could not reach desired BGFS accuracy after {niter + 1} iterations. Please ' +
-                  'try increasing niter_gd or eps_gd.')
+                  'try increasing the number of iterations or the tolerance.')
         nit = niter + 1
         success = False
 
     trace = trace[:nit]
 
-    return x_best, f_best, nfev, nit, success, trace
+    res = {'x': x_best, 'f': f_best, 'nfev': nfev, 'nit': nit, 'success': success, 'trace': trace}
+    return SimpleNamespace(**res)
 
 
 def two_way_linesearch(f, x, grad, d, a, niter, f_old, projection_callback, alpha, beta):
@@ -223,7 +224,7 @@ def two_way_linesearch(f, x, grad, d, a, niter, f_old, projection_callback, alph
             return SimpleNamespace(**res)
 
 
-def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha=0.602, A_fac=0.05,
+def adam_spsa(f, x0, projection_callback, c=1e-9, a=0.1, gamma=0.101, alpha=0.602, A_fac=0.05,
               beta_1=0.9, beta_2=0.9, eps=1e-15, niter=1000, verbosity=1):
     """
     Implementation of a Simultaneous Perturbation Stochastic Approximation (SPSA) gradient descent
@@ -244,8 +245,8 @@ def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha
 
     :param f: [callable] Objective function. Must accept its argument x as numpy array
     :param x0: [np.array] Initial condition
-    :param bound_lower: [np.array] Lower box constraints. Must have the same dimension as x0
-    :param bound_upper: [np.array] Upper box constraints. Must have the same dimension as x0
+    :param projection_callback: [callable] Bounds projection, see description of parameter
+           ``projection_callback`` in :func:`bfgs_b`
     :param c: [float] Initial step size for estimating the gradient approximation
     :param a: [float] Initial "gradient descent" step size
     :param gamma: [float] SPSA gamma determining the decay of the step size for estimating the
@@ -272,8 +273,8 @@ def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha
     """
 
     assert verbosity in [0, 1, 2], 'verbosity must be 0, 1, or 2.'
-    assert bound_lower.shape == x0.shape, 'bound_lower and x0 must have the same dimensions.'
-    assert bound_upper.shape == x0.shape, 'bound_upper and x0 must have the same dimensions.'
+    assert np.array_equal(projection_callback(x0)[0], x0), ('x0 outside the bounded domain ' +
+                                                            'defined by projection_callback.')
 
     n_dims = len(x0)
     A = A_fac * niter
@@ -289,30 +290,25 @@ def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha
         ak = a / (k + 1 + A) ** alpha
         ck = c / (k + 1) ** gamma
 
-        # Choose stochastic perturbations for calculation gradient approximation
+        # Choose stochastic perturbations for calculating the gradient approximation
         delta = 2 * np.round(np.random.uniform(0, 1, n_dims)) - 1
 
         # Boundary hit
-        if (x == bound_lower).any() or (x == bound_upper).any():
-            boundary_stuck = np.zeros(n_dims, dtype=bool)
-            idcs = np.argwhere((x == bound_lower) | (x == bound_upper))
-            for i in idcs:
-                # Consider partial "derivatives" for each component of x
-                delta_i = np.zeros(n_dims)
-                delta_i[i] = delta[i]
-                f_minus = f(x - ck * delta_i)
-                f_plus = f(x + ck * delta_i)
-                nfev += 2
+        _, bounds_hit = projection_callback(x)
+        if bounds_hit.any():
+            f_minus = f(x - ck * delta)
+            f_plus = f(x + ck * delta)
+            nfev += 2
+            ghat_test = (f_plus - f_minus) / (2 * ck * delta)
 
-                # Check whether following the objective function's gradient would lead to leaving
-                # the bounded domain
-                if ((f_plus - f_minus <= 0 and x[i] == bound_upper[i]) or
-                        (f_plus - f_minus >= 0 and x[i] == bound_upper[i])):
-                    boundary_stuck[i] = True
+            # Check whether following the objective function's gradient would lead to leaving
+            # the bounded domain
+            bounds_hit_new = projection_callback(x - ak * ghat_test)[1]
+            bounds_stuck = np.logical_and(bounds_hit, bounds_hit_new)
 
             # "Projected" stochastic perturbations vector, with perturbations only parallel to the
             # boundary
-            delta = np.where(boundary_stuck, 0, delta)
+            delta = np.where(bounds_stuck, 0, delta)
 
         # Calculate SPSA gradient approximation
         f_minus = f(x - ck * delta)
@@ -328,17 +324,17 @@ def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha
         x = x - ak * m_hat / (np.sqrt(v_hat) + 1e-9)
 
         # Clip x to bounded region
-        x = np.clip(x, bound_lower, bound_upper)
+        x, _ = projection_callback(x)
 
         f_new = f(x)
         nfev += 1
         if f_new <= f_best:
             f_best = f_new
             x_best = x.copy()
-            a *= 10
+            a *= 1.5
         else:
             x = x_best.copy()
-            a /= 10
+            a /= 1.5
 
         trace[k] = x.copy()
         if verbosity == 2:
@@ -354,10 +350,10 @@ def adam_spsa(f, x0, bound_lower, bound_upper, c=1e-9, a=0.1, gamma=0.101, alpha
     else:
         if verbosity > 0:
             print(f'Could not reach desired SPSA gradient descent accuracy after {niter + 1} ' +
-                  'iterations. Please try increasing niter or the SPSA gradient descent accuracy ' +
-                  'threshold.')
+                  'iterations. Please try increasing the number of iterations or the tolerance.')
         nit = niter + 1
         success = False
     trace = trace[:nit]
 
-    return x_best, f_best, nfev, nit, success, trace
+    res = {'x': x_best, 'f': f_best, 'nfev': nfev, 'nit': nit, 'success': success, 'trace': trace}
+    return SimpleNamespace(**res)

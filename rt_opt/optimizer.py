@@ -96,7 +96,7 @@ def _pad_trace(trace, targetLength):
     return np.pad(trace, [(0, paddingLength), (0, 0)], mode="edge")
 
 
-def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims_eff=3, n_embeddings=10,
+def _sequential_random_embeddings(f, x0, bounds, n_reduced_dims_eff=3, n_embeddings=10,
                                   verbosity=1, **optimizer_kwargs):
     """
     Implementation of the Sequential Random Embeddings algorithm described in
@@ -112,9 +112,10 @@ def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims_eff=3,
     and minimizing the objective function f(αx + A•y) w.r.t. (α, y).
 
     :param f: [callable] Objective function. Must accept its argument x as numpy array
+    :param x0: [np.array] Initial values for the bacteria population in the original,
+           high-dimensional space ℝ^h
     :param bounds: [callable] Bounds projection, see description of parameter
            ``projection_callback`` in :func:`local_search.bfgs_b`
-    :param orig_dim: [int] Original dimension of the problem, ℝ^h
     :param n_reduced_dims_eff: [int] Effective dimension of the embedded problem, ℝ^(l+1)
     :param n_embeddings: [int] Number of embedding iterations
     :param verbosity: [int] Output verbosity. Must be 0, 1, or 2
@@ -124,6 +125,7 @@ def _sequential_random_embeddings(f, x0, bounds, orig_dim, n_reduced_dims_eff=3,
 
     assert verbosity in [0, 1, 2], 'verbosity must be 0, 1, or 2.'
 
+    orig_dim = x0.shape[1]
     x = np.zeros(orig_dim)
     x_best = x.copy()
     f_best = np.inf
@@ -404,7 +406,6 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
         return _sequential_random_embeddings(f,
                                              x0_population,
                                              projection_callback,
-                                             n_dims,
                                              n_reduced_dims_eff=n_reduced_dims_eff,
                                              n_embeddings=n_embeddings,
                                              verbosity=verbosity,
@@ -430,7 +431,8 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
                                              beta_linesearch_gd=beta_linesearch_gd,
                                              eps_abs_gd=eps_abs_gd,
                                              eps_rel_gd=eps_rel_gd,
-                                             niter_gd=niter_gd)
+                                             niter_gd=niter_gd,
+                                             max_dims=n_reduced_dims_eff)
 
     else:
         x_best, f_best, nfev, nit, trace = run_and_tumble(f,
@@ -503,31 +505,26 @@ def optimize(f, x0=None, bounds=None, domain_scale=None, init='uniform', stepsiz
                     raise RuntimeError("Polynomial function approximation seems to be of higher "
                                        "order than two. This shouldn't happen.")
 
-            (x_gd_single,
-             f_min_gd_single,
-             nfev_gd_single,
-             nit_gd_single,
-             success_gd_single,
-             trace_gd_single) = bfgs_b(f,
-                                       x_start,
-                                       projection_callback,
-                                       H_start=H,
-                                       a=a_gd,
-                                       c=c_gd,
-                                       niter=niter_gd,
-                                       n_linesearch=n_linesearch_gd,
-                                       alpha_linesearch=alpha_linesearch_gd,
-                                       beta_linesearch=beta_linesearch_gd,
-                                       eps_abs=eps_abs_gd,
-                                       eps_rel=eps_rel_gd,
-                                       verbosity=verbosity)
-            x_best_gd[n] = x_gd_single
-            f_min_gd[n] = f_min_gd_single
-            nfev_gd += nfev_gd_single
-            nit_gd += nit_gd_single
-            nit_gd_arr[n] = nit_gd_single
-            success_gd[n] = success_gd_single
-            trace_gd[:, sortIdx[n], :] = _pad_trace(trace_gd_single, niter_gd)
+            local_optimization_result = bfgs_b(f,
+                                               x_start,
+                                               projection_callback,
+                                               H_start=H,
+                                               a=a_gd,
+                                               c=c_gd,
+                                               niter=niter_gd,
+                                               n_linesearch=n_linesearch_gd,
+                                               alpha_linesearch=alpha_linesearch_gd,
+                                               beta_linesearch=beta_linesearch_gd,
+                                               eps_abs=eps_abs_gd,
+                                               eps_rel=eps_rel_gd,
+                                               verbosity=verbosity)
+            x_best_gd[n] = local_optimization_result.x
+            f_min_gd[n] = local_optimization_result.f
+            nfev_gd += local_optimization_result.nfev
+            nit_gd += local_optimization_result.nit
+            nit_gd_arr[n] = local_optimization_result.nit
+            success_gd[n] = local_optimization_result.success
+            trace_gd[:, sortIdx[n], :] = _pad_trace(local_optimization_result.trace, niter_gd)
 
         result = OptimizeResult()
         result.success = success_gd.any()

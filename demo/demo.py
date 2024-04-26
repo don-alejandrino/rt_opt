@@ -167,7 +167,7 @@ def calculate_optimizer_metrics(problems, n_runs, plot_traces=False):
         fig.subplots_adjust(wspace=0.3, hspace=0.4)
         fig.suptitle('Run-and-tumble bacteria traces', fontsize=14)
         fig_manager = plt.get_current_fig_manager()
-        fig_manager.window.showMaximized()
+        fig_manager.full_screen_toggle()
         fig.set_size_inches(25.6, 14.4)
         plt.savefig(join(SAVE_DIR, 'bacteria_traces.png'), bbox_inches='tight', dpi=150)
         plt.show()
@@ -353,7 +353,7 @@ def show_statistics(problems, optimizer_results, ndims):
     fig.set_size_inches(25.6, 14.4)
     plt.savefig(join(SAVE_DIR, f'optimizer_statistics_{ndims}D.pdf'), bbox_inches='tight')
     fig_manager = plt.get_current_fig_manager()
-    fig_manager.window.showMaximized()
+    fig_manager.full_screen_toggle()
     plt.show()
 
 

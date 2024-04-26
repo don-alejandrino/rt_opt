@@ -93,7 +93,7 @@ def _pad_trace(trace, targetLength):
     currentLength = trace.shape[0]
     paddingLength = (targetLength - currentLength)
 
-    return np.pad(trace, [(0, paddingLength), (0, 0)], mode="edge")
+    return np.pad(trace, ((0, paddingLength), (0, 0)), mode="edge")
 
 
 def _sequential_random_embeddings(f, x0, bounds, n_reduced_dims_eff=3, n_embeddings=10,

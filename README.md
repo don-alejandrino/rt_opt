@@ -6,7 +6,7 @@ gradient-based search around the best minimum candidate points.
 The algorithm's goal is to find the global minimum of an objective function f over a (possibly
 bounded) region Ω, that is, to find
 
-<p align="center">
+<p style="text-align: center;">
 min f(x), x ∈ Ω, <br/>
 f: Ω ⊂ ℝ<sup>n</sup> → ℝ.
 </p>
@@ -21,7 +21,7 @@ Sequential Random Embeddings is basically to reduce high-dimensional problems to
 ones by embedding the original, high-dimensional search space ℝ<sup>n</sup> into a low dimensional
 one, ℝ<sup>m</sup>, by sequentially applying the random linear transformation
 
-<p align="center">
+<p style="text-align: center;">
 x<sub>0</sub> = 0<br>
 x<sub>k+1</sub> = α<sub>k+1</sub>x<sub>k</sub> + A • y<sub>k+1</sub>,<br>
 x ∈ ℝ<sup>n</sup>,&nbsp;&nbsp;&nbsp;&nbsp;y ∈ ℝ<sup>m</sup>,&nbsp;&nbsp;&nbsp;&nbsp;

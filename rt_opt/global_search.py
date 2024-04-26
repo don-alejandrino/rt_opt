@@ -43,7 +43,7 @@ def run_and_tumble(f, x0_population, projection_callback, niter, stepsize_start,
            according to a Gaussian distribution,
            -----
            attraction_strength / 2 / attraction_sigma ** 2
-                * exp(-(np.square(x - x_vis) / 2 / attraction_sigma ** 2),
+                * exp(-(np.square(x - x_vis) / 2 / attraction_sigma ** 2)),
            -----
            around each point x_vis visited thus far. This parameter only has an effect if
            attraction == True
@@ -126,7 +126,7 @@ def run_and_tumble(f, x0_population, projection_callback, niter, stepsize_start,
                 v[m] = -v[m]
             elif bounds_hit[m].any() or np.random.uniform() > 1 - tr:
                 # Realistically, tr must be clipped to [0, 1]. However, the inequality above is not
-                # influenced by this clipping and we thus omit it in order to save computation time
+                # influenced by this clipping, and we thus omit it in order to save computation time
                 v_m = np.random.uniform(-1, 1, n_dims)
                 while not v_m.any():
                     v_m = np.random.uniform(-1, 1, n_dims)

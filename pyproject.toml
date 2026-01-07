@@ -1,6 +1,77 @@
 [build-system]
 requires = [
     "setuptools>=68",
-    "wheel"
+    "wheel",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "rt_opt"
+version = "0.2.0"
+dependencies = [
+    "numpy>=1.26.4,<2.0.0",
+    "scipy>=1.12.0",
+]
+requires-python = ">=3.10"
+authors = [
+    { name = "Alexander Geiseler", email = "don-alejandrino@outlook.com" },
+]
+description = "Metaheuristic global optimization algorithm"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = [
+    "scipy-stubs>=1.12.0",
+    "pytest>=9.0.2",
+]
+demo = [
+    "dlib>=19.24.0",
+    "matplotlib>=3.8.4",
+    "tqdm>=4.65.0",
+    "pandas>=2.1.4",
+    "pandas-stubs>=2.1.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/don-alejandrino/rt_opt"
+Repository = "https://github.com/don-alejandrino/rt_opt.git"
+"Bug Tracker" = "https://github.com/don-alejandrino/rt_opt/issues"
+
+[tool.setuptools.packages]
+find = { }
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812", # Missing trailing comma
+    "FBT001", # Boolean-typed positional argument in function definition
+    "FBT002", # Boolean default positional argument in function definition
+    "FBT003", # Boolean positional value in function call
+    "RUF002", # Ambiguous Unicode character in docstring
+    "RUF003", # Ambiguous Unicode character in comment
+]
+
+[tool.ruff.lint.per-file-ignores]
+"rt_opt/utils/testproblems.py" = [
+    "D102", # Missing docstring in public method
+    "D107", # Missing docstring in __init__
+]
+"rt_opt/utils/testproblems_shifted.py" = [
+    "D101", # Missing docstring in public class
+    "D102", # Missing docstring in public method
+    "D107", # Missing docstring in __init__
+]
+"tests/**" = [
+    "D", # All docstring related rules
+    "INP001", # Implicit namespace package
+    "S101", # Use of assert detected
+]
+"demo/demo.py" = [
+    "INP001", # Implicit namespace package
+]

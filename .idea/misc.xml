@@ -3,5 +3,13 @@
   <component name="Black">
     <option name="sdkName" value="rt_opt" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="rt_opt" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="uv (RunAndTumbleOptimizer)" project-jdk-type="Python SDK" />
+  <component name="PyrightConfiguration">
+    <option name="executableDiscoveryMode" value="PATH" />
+    <option name="pathToExecutable" value="$USER_HOME$/.local/bin/pyright-langserver" />
+  </component>
+  <component name="RuffConfiguration">
+    <option name="executableDiscoveryMode" value="PATH" />
+    <option name="pathToExecutable" value="$USER_HOME$/.local/bin/ruff" />
+  </component>
 </project>

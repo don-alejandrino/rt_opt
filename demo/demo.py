@@ -24,7 +24,7 @@ from rt_opt.optimizer import optimize
 from rt_opt.utils.testproblems import MultiMinimum, SingleMinimum, TestProblem
 from rt_opt.utils.types import ObjectiveFunctionType
 
-SAVE_DIR = "demo/results_new"
+SAVE_DIR = "demo/results"
 
 logger = logging.getLogger(__name__)
 
@@ -603,12 +603,12 @@ if __name__ == "__main__":
     ]
 
     metrics_2d = calculate_optimizer_metrics(testproblems_2d, nruns, plot_traces=True)
-    # metrics_15d = calculate_optimizer_metrics(
-    #    testproblems_15d, nruns, plot_traces=False
-    # )
+    metrics_15d = calculate_optimizer_metrics(
+        testproblems_15d, nruns, plot_traces=False
+    )
 
     statistics_2d = collect_statistics(testproblems_2d, metrics_2d, 2)
-    # statistics_15d = collect_statistics(testproblems_15d, metrics_15d, 15)
+    statistics_15d = collect_statistics(testproblems_15d, metrics_15d, 15)
 
     plot_statistics(statistics_2d, 2)
-    # plot_statistics(statistics_15d, 15)
+    plot_statistics(statistics_15d, 15)

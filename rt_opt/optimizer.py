@@ -82,6 +82,13 @@ class Optimizer:
             projection_callback_population,
             self.global_search_config,
         )
+        # For deciding whether the overall search was successful, we ignore whether
+        # the initial global search stage was successful (which is the case if the
+        # bacteria distribution has reached a stationary state) and instead just
+        # check whether any of the subsequent local searches were successful. This is
+        # because the global search stage is not expected to find a minimum with high
+        # accuracy, but rather to just explore the search space and provide good
+        # starting points for the local searches.
         x_best_gs, f_best_gs, nfev_gs, nit_gs, _success_gs, trace_gs = (
             global_search_result.to_tuple()
         )

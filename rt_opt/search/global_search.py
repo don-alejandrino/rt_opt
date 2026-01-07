@@ -52,7 +52,9 @@ def run_and_tumble(  # noqa: PLR0915
             "your specific problem.",
             stacklevel=1,
         )
-        config.stepsize_start = 0.1
+        stepsize_start = 0.1
+    else:
+        stepsize_start = config.stepsize_start
 
     if config.attraction_sigma is None:
         warn(
@@ -62,7 +64,9 @@ def run_and_tumble(  # noqa: PLR0915
             "your specific problem.",
             stacklevel=1,
         )
-        config.attraction_sigma = 1
+        attraction_sigma = 1
+    else:
+        attraction_sigma = config.attraction_sigma
 
     if config.niter <= config.stationarity_window:
         err_msg = "`niter` must be larger than `stationarity_window`."
@@ -88,13 +92,32 @@ def run_and_tumble(  # noqa: PLR0915
     # Initial random bacteria orientations
     v = _initialize_bacteria_orientations(n_bacteria, n_dims, rng)
 
-    stepsize_end = config.stepsize_start * config.stepsize_decay_fac
-    for n in range(config.niter):
-        alpha = config.stepsize_start + (stepsize_end - config.stepsize_start) * (
-            n**2
-        ) / (config.niter**2)
+    stepsize_end = stepsize_start * config.stepsize_decay_fac
+    niter = config.niter
+    base_tumble_rate = config.base_tumble_rate
+    stationarity_window = config.stationarity_window
+    stationarity_r_value_threshold = config.stationarity_r_value_threshold
+    eps_stat = config.eps_stat
+    attraction = config.attraction
+    attraction_window = config.attraction_window
+    attraction_strength = config.attraction_strength
+    bounds_reflection = config.bounds_reflection
 
-        grad_attractant = _calculate_attractant_gradient(x, trace, n, config)
+    for n in range(niter):
+        alpha = stepsize_start + (stepsize_end - stepsize_start) * (n**2) / (niter**2)
+
+        grad_attractant = (
+            _calculate_attractant_gradient(
+                x,
+                trace,
+                n,
+                attraction_window,
+                attraction_sigma,
+                attraction_strength,
+            )
+            if attraction
+            else np.zeros(x.shape)
+        )
 
         # Run
         x = x_old + (v - grad_attractant) * alpha
@@ -111,9 +134,9 @@ def run_and_tumble(  # noqa: PLR0915
 
         # Avoid exp over/underflow
         delta_f = np.maximum(np.minimum(delta_f, 100), -100)
-        tumble_rate = config.base_tumble_rate * np.exp(delta_f)
+        tumble_rate = base_tumble_rate * np.exp(delta_f)
 
-        _tumble(v, tumble_rate, bounds_hit, config, n_dims, rng)
+        _tumble(v, tumble_rate, bounds_hit, bounds_reflection, n_dims, rng)
 
         # Remember best results
         x_best = np.where((f_new < f_best)[:, None], x, x_best)
@@ -121,30 +144,31 @@ def run_and_tumble(  # noqa: PLR0915
         x_old = x.copy()
         f_old = f_new.copy()
 
-        for m in range(n_bacteria):
-            logger.debug(
-                "Run-and-tumble step %d, bacterium %d:\tx = %s, f(x) = %g",
-                n + 1,
-                m,
-                str(x[m]),
-                f_new[m],
-            )
+        if logger.isEnabledFor(logging.DEBUG):
+            for m in range(n_bacteria):
+                logger.debug(
+                    "Run-and-tumble step %d, bacterium %d:\tx = %s, f(x) = %g",
+                    n + 1,
+                    m,
+                    str(x[m]),
+                    f_new[m],
+                )
 
         # Calculate mean position of the bacteria
         x_sum = x_sum + x.sum(axis=0)
         x_mean = x_sum / n_bacteria / (n + 1)
         x_mean_history.append(x_mean)
-        if (n + 1) % config.stationarity_window == 0:
+        if (n + 1) % stationarity_window == 0:
             # If the mean position has had a relative change less than `eps_stat` over a
             # step window `stationarity_window`, we consider the bacteria distribution
             # as stationary.
-            window = np.array(x_mean_history[-config.stationarity_window :]).sum(axis=1)
+            window = np.array(x_mean_history[-stationarity_window:]).sum(axis=1)
             slope, intercept, r_value, _p_value, _std_err = linregress(
                 np.linspace(0, 1, len(window)), window
             )
             if (
-                r_value**2 > config.stationarity_r_value_threshold
-                and abs(slope / intercept) < config.eps_stat
+                r_value**2 > stationarity_r_value_threshold
+                and abs(slope / intercept) < eps_stat
             ):
                 nit = n + 1
                 logger.info(
@@ -155,13 +179,14 @@ def run_and_tumble(  # noqa: PLR0915
                 break
 
     else:
-        logger.warning(
+        logger.info(
             "Run-and-tumble stage: No stationary state could be detected after "
-            "%d iterations. Please try increasing niter or the stationarity detection "
+            "%d iterations. If you want to run the run-and-tumble stage until"
+            "stationarity, please try increasing niter or the stationarity detection "
             "threshold eps_stat.",
-            config.niter + 1,
+            niter + 1,
         )
-        nit = config.niter + 1
+        nit = niter + 1
 
     trace = trace[: (nit + 1)]
 
@@ -183,50 +208,47 @@ def _initialize_bacteria_orientations(
     return v
 
 
-def _calculate_attractant_gradient(
+def _calculate_attractant_gradient(  # noqa: PLR0913
     x: np.ndarray,
     trace: np.ndarray,
     n: int,
-    config: RunAndTumbleConfig,
+    attraction_window: int,
+    attraction_sigma: float,
+    attraction_strength: float,
 ) -> np.ndarray:
-    if config.attraction:
-        # Calculate attraction between the bacteria traces
-        kernel = (
-            x[:, None, None, :]
-            - trace[None, (n + 1 - min(n, config.attraction_window)) : (n + 1), :, :]
-        )
-        grad_attractant = (
-            config.attraction_strength
-            / 2
-            / (config.attraction_sigma**2)  # type: ignore[reportOptionalOperand]
-            * kernel
-            * np.exp(
-                -(
-                    np.square(kernel)
-                    / 2
-                    / (
-                        config.attraction_sigma**2  # type: ignore[reportOptionalOperand]
-                    )
-                ).sum(axis=3)
-            )[:, :, :, None]
-        ).sum(axis=(1, 2))
-    else:
-        grad_attractant = np.zeros(x.shape)
-
-    return grad_attractant
+    # Calculate attraction between the bacteria traces
+    kernel = (
+        x[:, None, None, :]
+        - trace[None, (n + 1 - min(n, attraction_window)) : (n + 1), :, :]
+    )
+    return (
+        attraction_strength
+        / 2
+        / (attraction_sigma**2)  # type: ignore[reportOptionalOperand]
+        * kernel
+        * np.exp(
+            -(
+                np.square(kernel)
+                / 2
+                / (
+                    attraction_sigma**2  # type: ignore[reportOptionalOperand]
+                )
+            ).sum(axis=3)
+        )[:, :, :, None]
+    ).sum(axis=(1, 2))
 
 
 def _tumble(  # noqa: PLR0913
     v: np.ndarray,
     tumble_rate: np.ndarray,
     bounds_hit: np.ndarray,
-    config: RunAndTumbleConfig,
+    bounds_reflection: bool,
     n_dims: int,
     rng: np.random.Generator,
 ) -> None:
     # Calculate new orientation
     for m, tr in enumerate(tumble_rate):
-        if config.bounds_reflection and bounds_hit[m].any():
+        if bounds_reflection and bounds_hit[m].any():
             # Reflection at boundaries
             v[m] = -v[m]
         elif bounds_hit[m].any() or rng.uniform() > 1 - tr:

@@ -62,19 +62,24 @@ def bfgs_b(  # noqa: PLR0915, C901
     else:
         a = config.a
 
-    def calculate_gradient(x_: np.ndarray, delta: float) -> np.ndarray:
+    c = config.c
+    niter = config.niter
+    eps_abs = config.eps_abs
+    eps_rel = config.eps_rel
+
+    def calculate_gradient(x_: np.ndarray) -> np.ndarray:
         gradient = np.zeros(n_dims)
         for m in range(n_dims):
             unit_vec = np.zeros(n_dims)
             unit_vec[m] = 1
-            f_minus = f(x_ - delta * unit_vec)
-            f_plus = f(x_ + delta * unit_vec)
-            gradient[m] = (f_plus - f_minus) / 2 / delta
+            f_minus = f(x_ - c * unit_vec)
+            f_plus = f(x_ + c * unit_vec)
+            gradient[m] = (f_plus - f_minus) / 2 / c
 
         return gradient
 
     n_dims = len(x0)
-    trace = np.empty((config.niter, n_dims))
+    trace = np.empty((niter, n_dims))
 
     b = _initialize_inverse_hessian(hessian_start, n_dims)
 
@@ -82,7 +87,7 @@ def bfgs_b(  # noqa: PLR0915, C901
     x = x0.copy()
     x, _ = projection_callback(x)
     x_best = x.copy()
-    grad = calculate_gradient(x, config.c)
+    grad = calculate_gradient(x)
     nfev += 2 * n_dims
     f_curr = f_best = f(x)
     nfev += 1
@@ -91,7 +96,7 @@ def bfgs_b(  # noqa: PLR0915, C901
         err_msg = f"`x0` must be a vector of shape (n_dims,), but got {x0.shape}."
         raise ValueError(err_msg)  # noqa: TRY004
 
-    for k in range(config.niter):
+    for k in range(niter):
         _, bounds_hit = projection_callback(x)
         b[bounds_hit] = np.identity(n_dims)[bounds_hit]
 
@@ -116,7 +121,7 @@ def bfgs_b(  # noqa: PLR0915, C901
         nfev += ls_result.nfev
 
         if not ls_result.success:
-            logger.warning(
+            logger.debug(
                 "BGFS step %d: Couldn't find sufficiently good step size during "
                 "%d line search steps.",
                 k + 1,
@@ -132,7 +137,7 @@ def bfgs_b(  # noqa: PLR0915, C901
         # Update inverse Hessian approximation
         s = a * d
         s[bounds_hit] = 0
-        grad_new = calculate_gradient(x, config.c)
+        grad_new = calculate_gradient(x)
         nfev += 2 * n_dims
         y = grad_new - grad
         y[bounds_hit] = 0
@@ -148,7 +153,7 @@ def bfgs_b(  # noqa: PLR0915, C901
         logger.debug("BGFS step %d:\tx = %s, f(x) = %g", k + 1, str(x), f_curr)
 
         acc = np.linalg.norm(x - projection_callback(x - grad)[0])
-        if acc <= config.eps_abs + config.eps_rel * acc0:
+        if acc <= eps_abs + eps_rel * acc0:
             nit = k + 1
             success = True
             logger.info("BGFS target accuracy reached after %d steps.", nit)
@@ -158,9 +163,9 @@ def bfgs_b(  # noqa: PLR0915, C901
         logger.warning(
             "Could not reach desired BGFS accuracy after %d iterations. Please "
             "try increasing the number of iterations or the tolerance.",
-            config.niter + 1,
+            niter + 1,
         )
-        nit = config.niter + 1
+        nit = niter + 1
         success = False
 
     trace = trace[:nit]
@@ -230,46 +235,46 @@ def two_way_linesearch(  # noqa: PLR0913
     nfev = 0
     x_old = x.copy()
 
+    niter = config.niter
+    alpha = config.alpha
+    beta = config.beta
+
     # Initial stage deciding whether to increase or decrease search step size
     x, _ = projection_callback(x_old + a * d)
     f_new = f(x)
     nfev += 1
-    f_target = f_old - config.alpha * grad.dot(x_old - x)
+    f_target = f_old - alpha * grad.dot(x_old - x)
 
     if f_new >= f_target:
         # Initial step was too large => decrease a
-        for i in range(config.niter):
-            a *= config.beta
+        for i in range(niter):
+            a *= beta
             x, _ = projection_callback(x_old + a * d)
             f_new = f(x)
             nfev += 1
-            f_target = f_old - config.alpha * grad.dot(x_old - x)
+            f_target = f_old - alpha * grad.dot(x_old - x)
             if f_new < f_target:
                 return LineSearchOutput(
                     x=x, f=f_new, a=a, nfev=nfev, nit=i + 1, success=True
                 )
-        return LineSearchOutput(
-            x=x, f=f_new, a=a, nfev=nfev, nit=config.niter, success=False
-        )
+        return LineSearchOutput(x=x, f=f_new, a=a, nfev=nfev, nit=niter, success=False)
 
     # Initial step might probably have been larger => try to increase a
-    for i in range(config.niter):
+    for i in range(niter):
         a_before = a
         x_before = x.copy()
         f_before = f_new
-        a /= config.beta
+        a /= beta
         x, _ = projection_callback(x_old + a * d)
         f_new = f(x)
         nfev += 1
-        f_target = f_old - config.alpha * grad.dot(x_old - x)
+        f_target = f_old - alpha * grad.dot(x_old - x)
         if f_new > f_target:
             return LineSearchOutput(
                 x=x_before, f=f_before, a=a_before, nfev=nfev, nit=i + 1, success=True
             )
 
-    return LineSearchOutput(
-        x=x, f=f_new, a=a, nfev=nfev, nit=config.niter, success=False
-    )
+    return LineSearchOutput(x=x, f=f_new, a=a, nfev=nfev, nit=niter, success=False)
 
 
 def adam_spsa(  # noqa: PLR0915
@@ -309,6 +314,16 @@ def adam_spsa(  # noqa: PLR0915
     if config is None:
         config = AdamSPSAConfig()
 
+    niter = config.niter
+    a = config.a
+    c = config.c
+    big_a_fac = config.big_a_fac
+    alpha = config.alpha
+    gamma = config.gamma
+    beta_1 = config.beta_1
+    beta_2 = config.beta_2
+    eps = config.eps
+
     if not np.array_equal(projection_callback(x0)[0], x0):
         err_msg = "`x0` is outside the bounded domain defined by `projection_callback`."
         raise ValueError(err_msg)
@@ -316,19 +331,18 @@ def adam_spsa(  # noqa: PLR0915
     rng = np.random.default_rng(config.seed)
 
     n_dims = len(x0)
-    big_a = config.big_a_fac * config.niter
-    a = config.a
+    big_a = big_a_fac * niter
     m = v = 0
 
-    trace = np.empty((config.niter, n_dims))
+    trace = np.empty((niter, n_dims))
     f0 = f(x0)
     nfev = 1
     f_best = f0
     x_best = x0.copy()
     x = x0.copy()
-    for k in range(config.niter):
-        ak = a / (k + 1 + big_a) ** config.alpha
-        ck = config.c / (k + 1) ** config.gamma
+    for k in range(niter):
+        ak = a / (k + 1 + big_a) ** alpha
+        ck = c / (k + 1) ** gamma
 
         # Choose stochastic perturbations for calculating the gradient approximation
         delta = 2 * np.round(rng.uniform(0, 1, n_dims)) - 1
@@ -358,10 +372,10 @@ def adam_spsa(  # noqa: PLR0915
 
         # Adam algorithm, with the true gradient replaced by the SPSA gradient
         # approximation
-        m = config.beta_1 * m + (1 - config.beta_1) * ghat
-        v = config.beta_2 * v + (1 - config.beta_2) * np.power(ghat, 2)
-        m_hat = m / (1 - np.power(config.beta_1, k + 1))
-        v_hat = v / (1 - np.power(config.beta_2, k + 1))
+        m = beta_1 * m + (1 - beta_1) * ghat
+        v = beta_2 * v + (1 - beta_2) * np.power(ghat, 2)
+        m_hat = m / (1 - np.power(beta_1, k + 1))
+        v_hat = v / (1 - np.power(beta_2, k + 1))
         x = x - ak * m_hat / (np.sqrt(v_hat) + 1e-9)
 
         # Clip x to bounded region
@@ -380,7 +394,7 @@ def adam_spsa(  # noqa: PLR0915
         trace[k] = x.copy()
         logger.debug("SPSA step %d:\tx = %s, ghat = %s", k + 1, str(x), str(ghat))
 
-        if abs(f_plus - f_minus) < config.eps:
+        if abs(f_plus - f_minus) < eps:
             nit = k + 1
             success = True
             logger.info(
@@ -393,9 +407,9 @@ def adam_spsa(  # noqa: PLR0915
             "Could not reach desired SPSA gradient descent accuracy after %d "
             "iterations. Please try increasing the number of iterations or the "
             "tolerance.",
-            config.niter + 1,
+            niter + 1,
         )
-        nit = config.niter + 1
+        nit = niter + 1
         success = False
     trace = trace[:nit]
 

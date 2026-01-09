@@ -71,6 +71,7 @@ ignore = [
     "D", # All docstring related rules
     "INP001", # Implicit namespace package
     "S101", # Use of assert detected
+    "PLR0913", # Too many arguments in function definition
 ]
 "demo/demo.py" = [
     "INP001", # Implicit namespace package

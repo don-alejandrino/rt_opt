@@ -184,9 +184,9 @@ def run_and_tumble(  # noqa: PLR0915
             "%d iterations. If you want to run the run-and-tumble stage until"
             "stationarity, please try increasing niter or the stationarity detection "
             "threshold eps_stat.",
-            niter + 1,
+            niter,
         )
-        nit = niter + 1
+        nit = niter
 
     trace = trace[: (nit + 1)]
 

@@ -67,6 +67,9 @@ def test_bfgs_b(
     assert result.x_best.shape == x0.shape
     assert isinstance(result.f_best, float)
     assert result.nfev == objective_function.call_counter
+    assert result.f_best == pytest.approx(
+        objective_function(result.x_best), abs=np.finfo(float).eps
+    )
     assert isinstance(result.trace, np.ndarray)
     assert result.trace.shape == (result.nit, *x0.shape)
     if niter == 100:
@@ -173,6 +176,9 @@ def test_adam_spsa(
         assert result.x_best.shape == x0.shape
         assert isinstance(result.f_best, float)
         assert result.nfev == objective_function.call_counter
+        assert result.f_best == pytest.approx(
+            objective_function(result.x_best), abs=np.finfo(float).eps
+        )
         assert isinstance(result.trace, np.ndarray)
         assert result.trace.shape == (result.nit, *x0.shape)
         if niter == 500:

@@ -88,8 +88,13 @@ def test_run_and_tumble(
         assert isinstance(result.f_best, np.ndarray)
         assert result.f_best.shape == (n_bacteria,)
         assert result.nfev == objective_function.call_counter
+        assert all(
+            f_best == pytest.approx(objective_function(x_best), abs=np.finfo(float).eps)
+            for f_best, x_best in zip(result.f_best, result.x_best, strict=True)
+        )
         assert (
             result.success is True or result.nit == config.niter
         )  # Algorithm my or may not converge
         assert isinstance(result.trace, np.ndarray)
         assert result.trace.shape == (result.nit + 1, *x0_population.shape)
+        assert np.array_equal(result.trace[0], x0_population)

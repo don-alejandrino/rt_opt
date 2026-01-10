@@ -103,11 +103,12 @@ def prepare_x0(
 
 
 def pad_trace(trace: np.ndarray, target_length: int) -> np.ndarray:
-    """Pad single-bacteria trace with zeros to given length.
+    """Pad single-bacteria trace to given target length by repeating the last entry.
 
     :param trace: Single-bacteria trace.
     :param target_length: Desired length of the trace after padding.
-    :return: Trace padded with zeros.
+    :return: Padded trace with the last entry repeated as often as necessary to reach
+             the target length.
 
     """
     current_length = trace.shape[0]

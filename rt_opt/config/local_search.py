@@ -53,7 +53,12 @@ class AdamSPSAConfig:
            Must be in between 0 and 1.
     :param beta_2: Adam "forgetting factor" for the squares of the previous gradient
            approximations. Must be in between 0 and 1.
-    :param eps: Absolute tolerance.
+    :param eps: Absolute tolerance for the gradient magnitude. Once the gradient
+           approximation becomes smaller than `eps` for `n_repeated_eps_threshold_hits`
+           in a row, the algorithm stops.
+    :param n_repeated_eps_threshold_hits: Number of times the gradient approximation
+           must be below `eps` in a row before stopping. We do this to avoid stopping
+           too early due to stochastic fluctuations in the gradient approximation.
     :param niter: Maximum number of iterations.
     :param seed: Random seed for reproducibility.
     """
@@ -66,5 +71,6 @@ class AdamSPSAConfig:
     beta_1: float = 0.9
     beta_2: float = 0.9
     eps: float = 1e-15
+    n_repeated_eps_threshold_hits: int = 10
     niter: int = 1000
     seed: int | None = None

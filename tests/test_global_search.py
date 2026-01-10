@@ -5,8 +5,13 @@ from rt_opt.config.global_search import RunAndTumbleConfig
 from rt_opt.search.global_search import run_and_tumble
 
 
-def objective_function(x: np.ndarray) -> float:
-    return np.square(x).sum()
+class ObjectiveFunction:
+    def __init__(self) -> None:
+        self.call_counter = 0
+
+    def __call__(self, x: np.ndarray) -> float:
+        self.call_counter += 1
+        return np.square(x).sum()
 
 
 @pytest.mark.filterwarnings("ignore:`attraction_sigma` was not provided.")
@@ -48,6 +53,7 @@ def test_run_and_tumble(
         return x, bounds_hit
 
     x0_population = np.array([[1.0, 2.0], [3.0, 4.0]])
+    objective_function = ObjectiveFunction()
     if stationarity_window >= config.niter:
         with pytest.raises(
             ValueError, match=r"`niter` must be larger than `stationarity_window`."
@@ -81,7 +87,7 @@ def test_run_and_tumble(
         assert result.x_best.shape == x0_population.shape
         assert isinstance(result.f_best, np.ndarray)
         assert result.f_best.shape == (n_bacteria,)
-        assert result.nfev == (result.nit + 1) * n_bacteria
+        assert result.nfev == objective_function.call_counter
         assert (
             result.success is True or result.nit == config.niter
         )  # Algorithm my or may not converge

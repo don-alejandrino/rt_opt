@@ -52,7 +52,7 @@ def bfgs_b(  # noqa: PLR0915, C901
 
     if config.a is None:
         warn(
-            " Initial search step size `a` was not provided. As auto-scaling "
+            "Initial search step size `a` was not provided. As auto-scaling "
             "of `a` is not implemented for the low-level search routines, it has been "
             "set to 1 by default. Please consider tuning this parameter to your "
             "specific problem.",
@@ -93,8 +93,8 @@ def bfgs_b(  # noqa: PLR0915, C901
     nfev += 1
     acc0 = np.linalg.norm(x - projection_callback(x - grad)[0])
     if not isinstance(acc0, float):
-        err_msg = f"`x0` must be a vector of shape (n_dims,), but got {x0.shape}."
-        raise ValueError(err_msg)  # noqa: TRY004
+        err_msg = f"Initial accuracy calculation returned non-scalar value {acc0}."
+        raise TypeError(err_msg)
 
     for k in range(niter):
         _, bounds_hit = projection_callback(x)
@@ -163,9 +163,9 @@ def bfgs_b(  # noqa: PLR0915, C901
         logger.warning(
             "Could not reach desired BGFS accuracy after %d iterations. Please "
             "try increasing the number of iterations or the tolerance.",
-            niter + 1,
+            niter,
         )
-        nit = niter + 1
+        nit = niter
         success = False
 
     trace = trace[:nit]
@@ -323,6 +323,8 @@ def adam_spsa(  # noqa: PLR0915
     beta_1 = config.beta_1
     beta_2 = config.beta_2
     eps = config.eps
+    n_repeated_eps_threshold_hits = config.n_repeated_eps_threshold_hits
+    threshold_hits_counter = 0
 
     if not np.array_equal(projection_callback(x0)[0], x0):
         err_msg = "`x0` is outside the bounded domain defined by `projection_callback`."
@@ -395,6 +397,11 @@ def adam_spsa(  # noqa: PLR0915
         logger.debug("SPSA step %d:\tx = %s, ghat = %s", k + 1, str(x), str(ghat))
 
         if abs(f_plus - f_minus) < eps:
+            threshold_hits_counter += 1
+        else:
+            threshold_hits_counter = 0
+
+        if threshold_hits_counter >= n_repeated_eps_threshold_hits:
             nit = k + 1
             success = True
             logger.info(
@@ -407,9 +414,9 @@ def adam_spsa(  # noqa: PLR0915
             "Could not reach desired SPSA gradient descent accuracy after %d "
             "iterations. Please try increasing the number of iterations or the "
             "tolerance.",
-            niter + 1,
+            niter,
         )
-        nit = niter + 1
+        nit = niter
         success = False
     trace = trace[:nit]
 

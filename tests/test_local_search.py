@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Literal
 
 import numpy as np
@@ -28,7 +29,7 @@ class ObjectiveFunction:
 )
 @pytest.mark.parametrize("niter", [5, 100])
 def test_bfgs_b(
-    bounds: ArrayLike,
+    bounds: Sequence[Sequence[float]],
     a: float | None,
     hessian_start: np.ndarray | None,
     niter: Literal[5, 100],
@@ -93,7 +94,7 @@ def test_bfgs_b(
 )
 @pytest.mark.parametrize(("niter", "expect_success"), [(20, True), (2, False)])
 def test_two_way_linesearch(
-    bounds: ArrayLike,
+    bounds: Sequence[Sequence[float]],
     a: float,
     niter: int,
     expected_direction: Literal["decrease", "increase"],
@@ -146,7 +147,7 @@ def test_two_way_linesearch(
 @pytest.mark.parametrize("niter", [10, 500])
 def test_adam_spsa(
     x0: ArrayLike,
-    bounds: ArrayLike,
+    bounds: Sequence[Sequence[float]],
     niter: Literal[5, 100],
 ) -> None:
     config = AdamSPSAConfig(seed=42, niter=niter)
@@ -173,13 +174,14 @@ def test_adam_spsa(
         result = adam_spsa(objective_function, x0, projection_callback, config)
 
         assert isinstance(result.x_best, np.ndarray)
-        assert result.x_best.shape == x0.shape
         assert isinstance(result.f_best, float)
+        assert isinstance(result.trace, np.ndarray)
+
+        assert result.x_best.shape == x0.shape
         assert result.nfev == objective_function.call_counter
         assert result.f_best == pytest.approx(
             objective_function(result.x_best), abs=np.finfo(float).eps
         )
-        assert isinstance(result.trace, np.ndarray)
         assert result.trace.shape == (result.nit, *x0.shape)
         if niter == 500:
             # For this simple objective function, we expect the algorithm to always

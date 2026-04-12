@@ -53,11 +53,9 @@ class OptimizationConfig:
     n_bacteria_per_dim: int = 3
     n_best_selection: int = 3
     max_dims: int = 3
-    global_search: RunAndTumbleConfig = field(
-        default_factory=lambda: RunAndTumbleConfig()
-    )
-    local_search: BFGSBConfig = field(default_factory=lambda: BFGSBConfig())
+    global_search: RunAndTumbleConfig = field(default_factory=RunAndTumbleConfig)
+    local_search: BFGSBConfig = field(default_factory=BFGSBConfig)
     embedding: SequentialRandomEmbeddingsConfig = field(
-        default_factory=lambda: SequentialRandomEmbeddingsConfig()
+        default_factory=SequentialRandomEmbeddingsConfig
     )
     seed: int | None = None

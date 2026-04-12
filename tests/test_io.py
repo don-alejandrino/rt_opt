@@ -1,8 +1,8 @@
 import re
+from collections.abc import Sequence
 
 import numpy as np
 import pytest
-from numpy._typing import ArrayLike
 
 from rt_opt.utils.io import pad_trace, prepare_bounds, prepare_x0
 
@@ -28,7 +28,7 @@ from rt_opt.utils.io import pad_trace, prepare_bounds, prepare_x0
         "None as bounds",
     ],
 )
-def test_prepare_bounds(bounds: ArrayLike, ndims: int) -> None:
+def test_prepare_bounds(bounds: Sequence[Sequence[int]], ndims: int) -> None:
     if bounds is not None and len(bounds) != ndims:
         with pytest.raises(ValueError, match=r"`bounds` has wrong shape."):
             prepare_bounds(bounds, ndims)
@@ -76,7 +76,7 @@ def test_prepare_bounds(bounds: ArrayLike, ndims: int) -> None:
         "invalid shape of x0",
     ],
 )
-def test_prepare_x0(x0: ArrayLike) -> None:
+def test_prepare_x0(x0: Sequence[int | Sequence[int]]) -> None:
     if isinstance(x0, np.ndarray) and len(x0.shape) > 2:
         with pytest.raises(
             ValueError,
@@ -102,10 +102,11 @@ def test_prepare_x0(x0: ArrayLike) -> None:
             x0, n_bacteria_per_dim=3, max_dims=3, n_reduced_dims_eff=3
         )
 
-    if len(x0) > 2:  # multi-bacteria x0
+    first_xo_element = x0[0]
+    if isinstance(first_xo_element, Sequence):  # multi-bacteria x0
         assert x0_population.shape[0] == len(x0)
-        assert x0_population.shape[1] == len(x0[0])
-    else:  # single x0
+        assert x0_population.shape[1] == len(first_xo_element)
+    else:  # single-bacteria x0
         assert x0_population.shape[0] == 3 ** len(x0)
         assert x0_population.shape[1] == len(x0)
 

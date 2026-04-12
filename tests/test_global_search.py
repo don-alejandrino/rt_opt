@@ -82,10 +82,14 @@ def test_run_and_tumble(
             result = run_and_tumble(
                 objective_function, x0_population, projection_callback, config
             )
+
         n_bacteria = x0_population.shape[0]
+
         assert isinstance(result.x_best, np.ndarray)
-        assert result.x_best.shape == x0_population.shape
         assert isinstance(result.f_best, np.ndarray)
+        assert isinstance(result.trace, np.ndarray)
+
+        assert result.x_best.shape == x0_population.shape
         assert result.f_best.shape == (n_bacteria,)
         assert result.nfev == objective_function.call_counter
         assert all(
@@ -95,6 +99,5 @@ def test_run_and_tumble(
         assert (
             result.success is True or result.nit == config.niter
         )  # Algorithm my or may not converge
-        assert isinstance(result.trace, np.ndarray)
         assert result.trace.shape == (result.nit + 1, *x0_population.shape)
         assert np.array_equal(result.trace[0], x0_population)

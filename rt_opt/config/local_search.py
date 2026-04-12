@@ -33,7 +33,7 @@ class BFGSBConfig:
     niter: int = 100
     eps_abs: float = 1e-9
     eps_rel: float = 1e-6
-    linesearch: LineSearchConfig = field(default_factory=lambda: LineSearchConfig())
+    linesearch: LineSearchConfig = field(default_factory=LineSearchConfig)
 
 
 @dataclass

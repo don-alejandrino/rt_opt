@@ -13,7 +13,7 @@ f: Ω ⊂ ℝ<sup>n</sup> → ℝ.
 
 For the local, gradient-based search, a bounded BFGS algorithm is used.
 
-Since the chemotactic search becomes more and more ineffective with increasing problem
+Since the chemotactic search becomes more and more inefficient with increasing problem
 dimensionality,
 [Sequential Random Embeddings](http://www.lamda.nju.edu.cn/huyq/papers/ijcai16-sre.pdf) are used
 to solve the optimization problem once its dimensionality exceeds a given threshold. The idea of
@@ -32,15 +32,19 @@ and minimizing the objective function f(α<sub>k+1</sub>x<sub>k</sub> + A • y<
 (α<sub>k+1</sub>, y<sub>k+1</sub>) for each k in a given range.
 
 ## Installation
+
 rt_opt can be most conveniently installed via pip:
+
 ```
 pip install rt_opt
 ```
 
 ## Usage
+
 For a quick start, try to find the global minimum of the
 [Eggholder function](https://www.sfu.ca/~ssurjano/egg.html) within the default square
 x<sub>i</sub> ∈ [-512, 512] ∀ i = 1, 2:
+
 ```
 import time
 
@@ -68,6 +72,7 @@ print(f'Optimization error is {np.abs(ret.fun - problem.min.f)}.')
 ```
 
 ### Non-rectangular bounds
+
 If your optimization problem involves an arbitrary, non-rectangular bounded domain, you may as well
 provide a custom bounds callback. Every such callback must return a tuple (x_projected, bounds_hit),
 where x_projected is the input variable x projected to the defined search region. That is, if x is
@@ -82,6 +87,7 @@ the defined search domain ∀ δ ∈ ℝ⁺, where ê<sub>i</sub> is the i-th un
 
 In the following example, we try to find the global minimum of the Eggholder function within a
 circle with radius 512 around the origin:
+
 ```
 import numpy as np
 import matplotlib.pyplot as plt
@@ -147,13 +153,15 @@ plt.show()
 
 >>> Function minimum found at x = [418.56055019 171.04305027], yielding f(x) = -629.6336812770477.
 ```
+
 ![Example Trace](demo/example_trace.png)
 
 ## Performance
+
 For a performance comparison of rt_opt with other global optimization algorithms, namely
 *differential_evolution* and *dual_annealing* from scipy, as well as dlib's
 [LIPO]( http://blog.dlib.net/2017/12/a-global-optimization-algorithm-worth.html )-based
 *find_min_global*, see [here](demo/results). The comparison results were obtained by running
 [demo.py](demo/demo.py), where each of these four algorithms was evaluated 100 times with default
-parameters on a couple of 2D and 15D test functions (details on these functions can be found 
+parameters on a couple of 2D and 15D test functions (details on these functions can be found
 [here](https://en.wikipedia.org/wiki/Test_functions_for_optimization)).

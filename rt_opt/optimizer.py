@@ -76,6 +76,12 @@ class Optimizer:
             )
 
         n_bacteria, n_dims = x0_population.shape
+        if n_bacteria < self.n_best_selection:
+            err_msg = (
+                "`n_best_selection` must not be larger than the number of bacteria."
+            )
+            raise ValueError(err_msg)
+
         global_search_result = run_and_tumble(
             f,
             x0_population,
@@ -115,9 +121,8 @@ class Optimizer:
         nit_ls = 0
         success_ls = np.empty(self.n_best_selection)
         trace_ls = np.empty((self.local_search_config.niter, n_bacteria, n_dims))
-        trace_ls[:, sort_idx[self.n_best_selection :], :] = trace_gs[
-            -1, sort_idx[self.n_best_selection :], :
-        ]
+        # Initialize with last point of global search trace
+        trace_ls[:] = trace_gs[-1]
         nit_ls_arr = np.empty(self.n_best_selection)
         visited_points = trace_gs.reshape(-1, n_dims)
 
@@ -180,7 +185,7 @@ def optimize(
     The algorithm's goal is to find
                                         min f(x), x ∈ Ω,
     where f: Ω ⊂ ℝ^n → ℝ.
-    Since the chemotactic search becomes more and more ineffective with increasing
+    Since the chemotactic search becomes more and more inefficient with increasing
     problem dimensionality, Sequential Random Embeddings are used to solve the
     optimization problem once its dimensionality exceeds a given threshold.
 

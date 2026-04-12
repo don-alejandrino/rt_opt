@@ -23,7 +23,7 @@ def prepare_bounds(
         bounds = np.array(bounds)
         if bounds.shape != (n_dims, 2):
             err_msg = (
-                "`bounds` has wrong shape. Expected shape is (n_dims, 2), where"
+                "`bounds` has wrong shape. Expected shape is (n_dims, 2), where "
                 "n_dims is the dimensionality of the problem. "
                 f"Got shape {bounds.shape}."
             )

@@ -374,6 +374,7 @@ def _set_up_initial_and_boundary_conditions(  # noqa: C901
             "shape (n_dims, 2), or a custom callback function."
         )
         raise ValueError(err_msg)
+
     return (
         n_bacteria,
         n_dims,

@@ -67,7 +67,7 @@ ignore = [
     "D102", # Missing docstring in public method
     "D107", # Missing docstring in __init__
 ]
-"tests/**" = [
+"test/**" = [
     "D", # All docstring related rules
     "INP001", # Implicit namespace package
     "S101", # Use of assert detected

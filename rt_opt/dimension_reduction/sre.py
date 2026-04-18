@@ -14,7 +14,7 @@ from rt_opt.utils.types import ObjectiveFunctionType, ProjectionCallbackType
 
 def sequential_random_embeddings(
     f: ObjectiveFunctionType,
-    x0: np.ndarray,
+    x0_population: np.ndarray,
     projection_callback: ProjectionCallbackType,
     optimizer: OptimizerProtocol,
     config: SequentialRandomEmbeddingsConfig | None = None,
@@ -37,8 +37,8 @@ def sequential_random_embeddings(
     and minimizing the objective function f(αx + A•y) w.r.t. (α, y).
 
     :param f: Objective function. Must accept its argument `x` as numpy array.
-    :param x0: Initial values for the bacteria population in the original,
-           high-dimensional space ℝ^h.
+    :param x0_population: Initial values for the bacteria population in the original,
+           high-dimensional space ℝ^h. Must have the shape (n_bacteria, h).
     :param projection_callback: Bounds projection, see description of parameter
            `projection_callback` in :func:`search.local_search.bfgs_b`.
     :param optimizer: Optimizer function to be used for minimizing the target function
@@ -59,7 +59,7 @@ def sequential_random_embeddings(
     # f(αx + A•y) w.r.t. the tuple (α, y).
     n_reduced_dims_eff = config.n_reduced_dims + 1
 
-    orig_dim = x0.shape[1]
+    orig_dim = x0_population.shape[1]
     x = np.zeros(orig_dim)
     x_best = x.copy()
     f_best = np.inf
@@ -107,10 +107,13 @@ def sequential_random_embeddings(
             return out[:, 0], out[:, 1]
 
         # Set up y0
-        y0 = np.zeros((x0.shape[0], n_reduced_dims_eff))
+        y0 = np.zeros((x0_population.shape[0], n_reduced_dims_eff))
         y0[:, 0] = 1
         y0[:, 1:] = np.array(
-            [np.linalg.lstsq(a_matrix, x_orig - x, rcond=None)[0] for x_orig in x0]
+            [
+                np.linalg.lstsq(a_matrix, x_orig - x, rcond=None)[0]
+                for x_orig in x0_population
+            ]
         )
 
         info_msg = f"\nEmbedding iteration {i}"

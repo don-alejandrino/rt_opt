@@ -18,17 +18,9 @@ from rt_opt.optimizer import Optimizer
 from rt_opt.search.search_output import SingleSearchOutput
 from rt_opt.utils.io import prepare_x0
 from rt_opt.utils.types import ProjectionCallbackType
+from test.common import SphereObjectiveFunction
 
 BoundsType = np.ndarray | ProjectionCallbackType | Sequence[Sequence[float]] | None
-
-
-class ObjectiveFunction:
-    def __init__(self) -> None:
-        self.call_counter = 0
-
-    def __call__(self, x: np.ndarray) -> float:
-        self.call_counter += 1
-        return np.square(x).sum()
 
 
 class SequentialRandomEmbeddingsWrapper:
@@ -83,7 +75,7 @@ def make_optimization_config(
 
 
 def check_optimization_result(
-    objective_function: ObjectiveFunction,
+    objective_function: SphereObjectiveFunction,
     result: OptimizeResult | SingleSearchOutput,
     global_search_niter_max: int,
     local_search_niter_max: int,
@@ -189,7 +181,7 @@ def test_optimizer_run(
         local_search_config=local_search_config,
     )
 
-    objective_function = ObjectiveFunction()
+    objective_function = SphereObjectiveFunction()
     optimization_args = {
         "f": objective_function,
         "x0_population": x0_population,
@@ -253,7 +245,7 @@ def test_optimize_invokes_sre_when_necessary(
     )
 
     config = make_optimization_config(max_dims=max_dims)
-    objective_function = ObjectiveFunction()
+    objective_function = SphereObjectiveFunction()
     result = optimizer_module.optimize(
         objective_function, x0=x0, bounds=bounds, config=config
     )
@@ -301,7 +293,7 @@ def test_optimize_rejects_too_few_reduced_dims(n_reduced_dims: int) -> None:
         match=r"`n_reduced_dims` must not be less than 2\.",
     ):
         optimizer_module.optimize(
-            ObjectiveFunction(),
+            SphereObjectiveFunction(),
             x0=np.array([1.0, 2.0]),
             config=config,
         )
@@ -317,7 +309,7 @@ def test_optimize_validates_n_best_selection_against_population() -> None:
         match=r"`n_best_selection` must not be larger than `n_bacteria`\.",
     ):
         optimizer_module.optimize(
-            ObjectiveFunction(),
+            SphereObjectiveFunction(),
             x0=x0,
             config=config,
         )
@@ -332,7 +324,7 @@ def test_optimize_requires_x0_without_box_bounds(bounds: BoundsType) -> None:
         ),
     ):
         optimizer_module.optimize(
-            ObjectiveFunction(),
+            SphereObjectiveFunction(),
             x0=None,
             bounds=bounds,
             config=make_optimization_config(),
@@ -343,7 +335,7 @@ def test_optimize_requires_x0_without_box_bounds(bounds: BoundsType) -> None:
 def test_optimize_end_to_end_samples_initial_population_from_box_bounds(
     init: Literal["random", "uniform"],
 ) -> None:
-    objective_function = ObjectiveFunction()
+    objective_function = SphereObjectiveFunction()
     bounds = np.array([[-5.0, 5.0], [-5.0, 5.0]])
     config = make_optimization_config(init=init, n_bacteria_per_dim=3)
     result = optimizer_module.optimize(
@@ -393,7 +385,7 @@ def test_optimize_end_to_end(
     bounds: BoundsType,
     max_dims: int,
 ) -> None:
-    objective_function = ObjectiveFunction()
+    objective_function = SphereObjectiveFunction()
     config = OptimizationConfig(
         n_bacteria_per_dim=2,
         max_dims=max_dims,

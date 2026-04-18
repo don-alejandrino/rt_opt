@@ -3,15 +3,7 @@ import pytest
 
 from rt_opt.config.global_search import RunAndTumbleConfig
 from rt_opt.search.global_search import run_and_tumble
-
-
-class ObjectiveFunction:
-    def __init__(self) -> None:
-        self.call_counter = 0
-
-    def __call__(self, x: np.ndarray) -> float:
-        self.call_counter += 1
-        return np.square(x).sum()
+from test.common import SphereObjectiveFunction
 
 
 @pytest.mark.filterwarnings("ignore:`attraction_sigma` was not provided.")
@@ -53,7 +45,7 @@ def test_run_and_tumble(
         return x, bounds_hit
 
     x0_population = np.array([[1.0, 2.0], [3.0, 4.0]])
-    objective_function = ObjectiveFunction()
+    objective_function = SphereObjectiveFunction()
     if stationarity_window >= config.niter:
         with pytest.raises(
             ValueError, match=r"`niter` must be larger than `stationarity_window`."

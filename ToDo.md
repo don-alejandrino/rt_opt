@@ -7,7 +7,7 @@
 - [ ] Put `uv.lock` to `.gitignore`
 - [ ] Set up CI-pipeline
 - [ ] Set up dependabot
-- [ ] Review and fix AI-generated tests
+- [x] Review and fix AI-generated tests
 - [x] Add test for SPSA algorithm
-- [ ] Fix warnings in tests
+- [x] Fix warnings in tests
 - [ ] Add regression tests (see 2D case in demo.py)

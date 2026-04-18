@@ -62,6 +62,10 @@ class TestProblem:
         """
         self._ndims = ndims
 
+    def __repr__(self) -> str:
+        """Return string representation of the test problem."""
+        return f"{self.__class__.__name__}({self.ndims})"
+
     def f(self, x: np.ndarray) -> float:
         """Objective function definition."""
         raise NotImplementedError

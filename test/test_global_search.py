@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
+from common.objective_functions import SphereObjectiveFunction
 
 from rt_opt.config.global_search import RunAndTumbleConfig
 from rt_opt.search.global_search import run_and_tumble
-from test.common import SphereObjectiveFunction
 
 
 @pytest.mark.filterwarnings("ignore:`attraction_sigma` was not provided.")

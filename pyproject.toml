@@ -29,6 +29,7 @@ classifiers = [
 dev = [
     "scipy-stubs>=1.12.0",
     "pytest>=9.0.2",
+    "pyyaml>=6.0.3",
 ]
 demo = [
     "dlib>=19.24.0",
@@ -77,3 +78,7 @@ ignore = [
 "demo/demo.py" = [
     "INP001", # Implicit namespace package
 ]
+
+[tool.pytest]
+markers = ["regression: mark a test as a regression test."]
+norecursedirs = ["test/common"]

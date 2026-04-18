@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from common.objective_functions import SphereObjectiveFunction
 
 from rt_opt.config.global_search import RunAndTumbleConfig
 from rt_opt.config.local_search import BFGSBConfig
@@ -7,7 +8,6 @@ from rt_opt.config.optimizer import SequentialRandomEmbeddingsConfig
 from rt_opt.dimension_reduction.sre import sequential_random_embeddings
 from rt_opt.optimizer import Optimizer
 from rt_opt.utils.types import ProjectionCallbackType
-from test.common import SphereObjectiveFunction
 
 
 def projection_callback_unbounded(x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

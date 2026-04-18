@@ -3,6 +3,7 @@ from typing import Literal
 
 import numpy as np
 import pytest
+from common.objective_functions import SphereObjectiveFunction
 from numpy import ndarray
 from scipy.optimize import OptimizeResult
 
@@ -18,7 +19,6 @@ from rt_opt.optimizer import Optimizer
 from rt_opt.search.search_output import SingleSearchOutput
 from rt_opt.utils.io import prepare_x0
 from rt_opt.utils.types import ProjectionCallbackType
-from test.common import SphereObjectiveFunction
 
 BoundsType = np.ndarray | ProjectionCallbackType | Sequence[Sequence[float]] | None
 

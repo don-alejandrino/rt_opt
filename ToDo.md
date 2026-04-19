@@ -4,7 +4,7 @@
     3. `uv tool install pyright`
 - [ ] README: Add section for interface changes (most parameters are now inside config
   objects). List all parameters from the old version and where to find them now
-- [ ] Delete `setup.cfg`
+- [x] Delete `setup.cfg`
 - [ ] Put `.idea` to `.gitignore`
 - [ ] Put `uv.lock` to `.gitignore`
 - [ ] Set up CI-pipeline

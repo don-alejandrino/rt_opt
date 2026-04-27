@@ -1,3 +1,7 @@
+<h1 align="center">
+<img width="794" alt="rt_opt_logo" src="https://github.com/user-attachments/assets/76f793d4-7044-49ff-b3e4-f375778ffcb9" />
+</h1><br>
+
 ![Python Versions](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-blue)
 [![PiPy Downloads](https://static.pepy.tech/badge/rt-opt)](https://pepy.tech/projects/rt-opt)
 [![Build Pipeline](https://github.com/don-alejandrino/rt_opt/actions/workflows/ci_build.yml/badge.svg?branch=master)](https://github.com/don-alejandrino/rt_opt/actions/workflows/ci_build.yml)

@@ -11,7 +11,7 @@
     - [ ] Set up test coverage
     - [ ] Set up code quality checks (ruff and pyright)
     - [ ] Set up branch protection rules for main branch
-    - [ ] Test matrix (multiple Python versions)
+    - [x] Test matrix (multiple Python versions)
     - [ ] Regression tests
     - [ ] Set up automatic releases on PyPI when pushing to main branch
 - [x] Set up dependabot

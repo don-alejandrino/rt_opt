@@ -10,9 +10,6 @@ on:
     branches: [ "master" ]
   workflow_dispatch:
 
-env:
-  UV_ACTION_VERSION: "8.1.0"
-
 jobs:
   version-matrix:
     runs-on: ubuntu-latest
@@ -31,7 +28,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install uv and set the Python version
-        uses: astral-sh/setup-uv@v${{ env.UV_ACTION_VERSION }}
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true

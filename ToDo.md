@@ -5,12 +5,16 @@
 - [ ] README: Add section for interface changes (most parameters are now inside config
   objects). List all parameters from the old version and where to find them now
 - [x] Delete `setup.cfg`
-- [ ] Put `.idea` to `.gitignore`
-- [ ] Put `uv.lock` to `.gitignore`
+- [x] Put `.idea` to `.gitignore`
+- [x] Put `uv.lock` to `.gitignore`
 - [ ] Set up CI-pipeline
     - [ ] Set up test coverage
     - [ ] Set up code quality checks (ruff and pyright)
-- [ ] Set up dependabot
+    - [ ] Set up branch protection rules for main branch
+    - [ ] Test matrix (multiple Python versions)
+    - [ ] Regression tests
+    - [ ] Set up automatic releases on PyPI when pushing to main branch
+- [x] Set up dependabot
 - [x] Review and fix AI-generated tests
 - [x] Add test for SPSA algorithm
 - [x] Fix warnings in tests

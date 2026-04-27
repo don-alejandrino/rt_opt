@@ -1,5 +1,6 @@
 ![python Badge](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-blue)
 <a href="https://pepy.tech/projects/rt-opt"><img src="https://static.pepy.tech/badge/rt-opt" alt="PyPI Downloads"></a>
+![CodeQL](https://github.com/don-alejandrino/rt_opt/workflows/CodeQL/badge.svg)
 # rt_opt: Run-and-tumble global optimizer
 
 Metaheuristic global optimization algorithm combining a bacterial run-and-tumble chemotactic search

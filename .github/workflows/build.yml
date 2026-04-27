@@ -1,6 +1,3 @@
-# Install Python dependencies, run tests and lint with different versions of Python and
-# the required dependencies.
-
 name: Build Pipeline
 
 on:

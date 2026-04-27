@@ -6,9 +6,8 @@
 [![PiPy Downloads](https://static.pepy.tech/badge/rt-opt)](https://pepy.tech/projects/rt-opt)
 [![Build Pipeline](https://github.com/don-alejandrino/rt_opt/actions/workflows/ci_build.yml/badge.svg?branch=master)](https://github.com/don-alejandrino/rt_opt/actions/workflows/ci_build.yml)
 [![CodeQL](https://github.com/don-alejandrino/rt_opt/actions/workflows/github-code-scanning/codeql/badge.svg?branch=master)](https://github.com/don-alejandrino/rt_opt/actions/workflows/github-code-scanning/codeql)
-# rt_opt: Run-and-tumble global optimizer
 
-Metaheuristic global optimization algorithm combining a bacterial run-and-tumble chemotactic search
+rt_opt is a metaheuristic global optimization algorithm combining a bacterial run-and-tumble chemotactic search
 (see, e.g., [here](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5418374/)) with a local,
 gradient-based search around the best minimum candidate points.
 The algorithm's goal is to find the global minimum of an objective function f over a (possibly

@@ -10,7 +10,6 @@ env:
   UV_VERSION: "0.11.7"
   RUFF_VERSION: "0.14.2"
   PYRIGHT_VERSION: "1.1.409"
-  SRC_DIR: "./rt_opt"
   PREFERRED_PYTHON_VERSION: "3.13"
 
 jobs:
@@ -28,19 +27,17 @@ jobs:
           version: ${{ env.UV_VERSION }}
 
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync --extra dev --extra demo
 
       - name: Run ruff
         uses: astral-sh/ruff-action@v4.0.0
         with:
-          src: ${{ env.SRC_DIR }}
           version: ${{ env.RUFF_VERSION }}
 
       - name: Run pyright
         uses: jakebailey/pyright-action@v3
         with:
           version: ${{ env.PYRIGHT_VERSION }}
-          extra-args: ${{ env.SRC_DIR }}
 
   version-matrix:
     runs-on: ubuntu-latest

@@ -28,17 +28,17 @@ class SingleSearchOutput:
 
     def to_optimize_result(self) -> OptimizeResult:
         """Convert to an OptimizeResult instance."""
-        res = OptimizeResult(
-            success=self.success,
-            x=self.x_best,
-            fun=self.f_best,
-            nfev=self.nfev,
-            nit=self.nit,
-        )
+        res_dict = {
+            "success": self.success,
+            "x": self.x_best,
+            "fun": self.f_best,
+            "nfev": self.nfev,
+            "nit": self.nit,
+        }
         if self.trace is not None:
-            res.trace = self.trace
+            res_dict["trace"] = self.trace
 
-        return res  # type: ignore[reportReturnType]
+        return OptimizeResult(**res_dict)
 
 
 @dataclass

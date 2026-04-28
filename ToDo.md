@@ -9,7 +9,7 @@
 - [x] Put `uv.lock` to `.gitignore`
 - [ ] Set up CI-pipeline
     - [ ] Set up test coverage
-    - [ ] Set up code quality checks (ruff and pyright)
+    - [x] Set up code quality checks (ruff and pyright)
     - [ ] Set up branch protection rules for main branch
     - [x] Test matrix (multiple Python versions)
     - [ ] Add publish test results action

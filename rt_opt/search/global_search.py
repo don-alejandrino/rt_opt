@@ -163,12 +163,11 @@ def run_and_tumble(  # noqa: PLR0915
             # step window `stationarity_window`, we consider the bacteria distribution
             # as stationary.
             window = np.array(x_mean_history[-stationarity_window:]).sum(axis=1)
-            slope, intercept, r_value, _p_value, _std_err = linregress(
-                np.linspace(0, 1, len(window)), window
-            )
+            regression_result = linregress(np.linspace(0, 1, len(window)), window)
             if (
-                r_value**2 > stationarity_r_value_threshold
-                and abs(slope / intercept) < eps_stat
+                regression_result.rvalue**2 > stationarity_r_value_threshold
+                and abs(regression_result.slope / regression_result.intercept)
+                < eps_stat
             ):
                 nit = n + 1
                 logger.info(

@@ -23,14 +23,14 @@ jobs:
       - name: Run ruff
         uses: astral-sh/ruff-action@v4.0.0
         with:
-          src: $SRC_DIR
-          version: $RUFF_VERSION
+          src: ${{ env.SRC_DIR }}
+          version: ${{ env.RUFF_VERSION }}
 
       - name: Run pyright
         uses: jakebailey/pyright-action@v3
         with:
-          version: $PYRIGHT_VERSION
-          working-directory: $SRC_DIR
+          version: ${{ env.PYRIGHT_VERSION }}
+          working-directory: ${{ env.SRC_DIR }}
 
   version-matrix:
     runs-on: ubuntu-latest
@@ -52,7 +52,7 @@ jobs:
         uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
-          version: $UV_VERSION
+          version: ${{ env.UV_VERSION }}
 
       - name: Install dependencies
         run: uv sync --extra dev

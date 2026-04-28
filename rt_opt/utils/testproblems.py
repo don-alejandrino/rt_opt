@@ -93,9 +93,9 @@ class Rastrigin(TestProblem):
         super().__init__(ndims)
 
     def f(self, x: np.ndarray) -> float:
-        return (
+        return float(
             10.0 * self.ndims + np.sum(np.square(x) - 10.0 * np.cos(2.0 * np.pi * x))
-        ).astype(float)
+        )
 
     @property
     def bounds(self) -> Bounds:

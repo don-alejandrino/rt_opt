@@ -10,7 +10,7 @@ env:
   UV_VERSION: "0.11.7"
   RUFF_VERSION: "0.14.2"
   PYRIGHT_VERSION: "1.1.409"
-  SRC_DIR: "./rt_opt/rt_opt"
+  SRC_DIR: "./rt_opt"
 
 jobs:
   sca:
@@ -39,7 +39,7 @@ jobs:
         uses: jakebailey/pyright-action@v3
         with:
           version: ${{ env.PYRIGHT_VERSION }}
-          working-directory: ${{ env.SRC_DIR }}
+          extra-args: ${{ env.SRC_DIR }}
 
   version-matrix:
     runs-on: ubuntu-latest

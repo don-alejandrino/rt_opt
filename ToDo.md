@@ -13,7 +13,7 @@
     - [ ] Set up branch protection rules for main branch: Enforce quality checks once CI
           pipeline is pushed to master and require deployments to succeed.
     - [x] Test matrix (multiple Python versions)
-    - [ ] Add publish test results action
+    - [x] Add publish test results action
     - [x] Regression tests
     - [ ] Set up automatic releases on PyPi when pushing to main branch. First only to
           test PyPi, and after a manual approval, also to real PyPi.

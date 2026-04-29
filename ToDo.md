@@ -8,12 +8,12 @@
 - [x] Put `.idea` to `.gitignore`
 - [x] Put `uv.lock` to `.gitignore`
 - [ ] Set up CI-pipeline
-    - [ ] Set up test coverage
+    - [x] Set up test coverage
     - [x] Set up code quality checks (ruff and pyright)
     - [ ] Set up branch protection rules for main branch
     - [x] Test matrix (multiple Python versions)
     - [ ] Add publish test results action
-    - [ ] Regression tests
+    - [x] Regression tests
     - [ ] Set up automatic releases on PyPI when pushing to main branch
 - [x] Set up dependabot
 - [x] Review and fix AI-generated tests

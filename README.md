@@ -5,6 +5,7 @@
 ![Python Versions](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-blue)
 [![PiPy Downloads](https://static.pepy.tech/badge/rt-opt)](https://pepy.tech/projects/rt-opt)
 [![Build Pipeline](https://github.com/don-alejandrino/rt_opt/actions/workflows/ci_build.yml/badge.svg?branch=master)](https://github.com/don-alejandrino/rt_opt/actions/workflows/ci_build.yml)
+[![cov](https://<don-alejandrino.github.io/rt_opt/badges/coverage.svg)](https://github.com/don-alejandrino/rt_opt/actions)
 [![CodeQL](https://github.com/don-alejandrino/rt_opt/actions/workflows/github-code-scanning/codeql/badge.svg?branch=master)](https://github.com/don-alejandrino/rt_opt/actions/workflows/github-code-scanning/codeql)
 
 rt_opt is a metaheuristic global optimization algorithm combining a bacterial run-and-tumble chemotactic search

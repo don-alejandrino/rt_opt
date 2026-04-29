@@ -2,7 +2,6 @@ name: "Build Pipeline"
 
 on:
   push:
-    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
   workflow_dispatch:
@@ -11,7 +10,7 @@ env:
   UV_VERSION: "0.11.7"
   RUFF_VERSION: "0.14.2"
   PYRIGHT_VERSION: "1.1.409"
-  PREFERRED_PYTHON_VERSION: "3.13"
+  LATEST_PYTHON_VERSION: "3.14"
 
 jobs:
   sca:
@@ -24,7 +23,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v8.1.0
         with:
-          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
+          python-version: ${{ env.LATEST_PYTHON_VERSION }}
           version: ${{ env.UV_VERSION }}
 
       - name: Install dependencies
@@ -69,19 +68,31 @@ jobs:
         # Run the tests with coverage only with the preferred Python version, to avoid
         # unnecessary multiple coverage runs.
         run: |
-          if [ "${{ matrix.python-version }}" = "${{ env.PREFERRED_PYTHON_VERSION }}" ]; then
-            uv run pytest -v -m "not regression" --cov=rt_opt --cov-report=json
+          if [ "${{ matrix.python-version }}" = "${{ env.LATEST_PYTHON_VERSION }}" ]; then
+            uv run pytest -v -m "not regression" --cov=rt_opt --cov-report=json --junitxml unit-test-results/test_report.xml
           else
             uv run pytest -v -m "not regression"
           fi
 
+      - name: Publish unit test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
+        with:
+          files: unit-test-results/**/*.xml
+
       - name: Run regression tests
         # Run regression tests only for the preferred Python version.
-        if: ${{ matrix.python-version == env.PREFERRED_PYTHON_VERSION }}
+        if: ${{ matrix.python-version == env.LATEST_PYTHON_VERSION }}
         run: |
-          uv run pytest -v -m regression
+          uv run pytest -v -m regression --junitxml regression-test-results/test_report.xml
+
+      - name: Publish regression test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: ${{ matrix.python-version == env.LATEST_PYTHON_VERSION && !cancelled() }}
+        with:
+          files: regression-test-results/**/*.xml
 
       - name: Update Coverage Badge
         # Only update the coverage badge for the preferred Python version and on master.
-        if: ${{ matrix.python-version == env.PREFERRED_PYTHON_VERSION && github.ref == 'refs/heads/master' }}
+        if: ${{ matrix.python-version == env.LATEST_PYTHON_VERSION && github.ref == 'refs/heads/master' }}
         uses: we-cli/coverage-badge-action@main

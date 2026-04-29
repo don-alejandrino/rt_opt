@@ -2,7 +2,7 @@ name: "Build Pipeline"
 
 on:
   push:
-    # TODO: Constrain to master branch once the pipeline is ready.
+    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
   workflow_dispatch:
@@ -83,5 +83,5 @@ jobs:
 
       - name: Update Coverage Badge
         # Only update the coverage badge for the preferred Python version and on master.
-        if: ${{ matrix.python-version == env.PREFERRED_PYTHON_VERSION }}
+        if: ${{ matrix.python-version == env.PREFERRED_PYTHON_VERSION && github.ref == 'refs/heads/master' }}
         uses: we-cli/coverage-badge-action@main

@@ -8,6 +8,8 @@ import yaml
 from scipy.optimize import OptimizeResult
 
 import rt_opt.utils.testproblems_shifted as tps
+from rt_opt.config.global_search import RunAndTumbleConfig
+from rt_opt.config.optimizer import OptimizationConfig, SequentialRandomEmbeddingsConfig
 from rt_opt.optimizer import optimize
 from rt_opt.utils.testproblems import TestProblem
 
@@ -30,9 +32,11 @@ TESTPROBLEMS_2D = [
     tps.Eggholder(),
     tps.Hoelder(),
     tps.McCormick(),
+    tps.Schaffer4(),
     tps.StyblinskiTang(2),
 ]
 TESTPROBLEMS_15D = [
+    tps.Rastrigin(15),
     tps.Sphere(15),
     tps.Rosenbrock(15),
     tps.StyblinskiTang(15),
@@ -58,10 +62,16 @@ def extract_bounds_from_testproblem(
     return bounds_lower, bounds_upper
 
 
-def run_test(problem: TestProblem, _run_number: int) -> OptimizeResult:
+def run_test(problem: TestProblem, run_number: int) -> OptimizeResult:
     bounds = np.vstack(extract_bounds_from_testproblem(problem)).T
+    # Initialize all seeds with the run number for reproducibility.
+    config = OptimizationConfig(
+        global_search=RunAndTumbleConfig(seed=run_number),
+        embedding=SequentialRandomEmbeddingsConfig(seed=run_number),
+        seed=run_number,
+    )
 
-    return optimize(problem.f, bounds=bounds)
+    return optimize(problem.f, bounds=bounds, config=config)
 
 
 def calculate_metrics(

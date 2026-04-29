@@ -70,12 +70,10 @@ jobs:
         # unnecessary multiple coverage runs.
         run: |
           if [ "${{ matrix.python-version }}" = "${{ env.PREFERRED_PYTHON_VERSION }}" ]; then
-            uv run pytest -v -m "not regression" --cov=src --cov-report=json:coverage
+            uv run pytest -v -m "not regression" --cov=rt_opt --cov-report=json
           else
             uv run pytest -v -m "not regression"
           fi
-          ls -a
-          cat .coverage
 
       - name: Update Coverage Badge
         # Only update the coverage badge for the preferred Python version and on master.

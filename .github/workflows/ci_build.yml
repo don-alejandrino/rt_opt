@@ -65,34 +65,29 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run unit tests
-        # Run the tests with coverage only with the preferred Python version, to avoid
+        # Run the tests with coverage only with the latest Python version, to avoid
         # unnecessary multiple coverage runs.
         run: |
           if [ "${{ matrix.python-version }}" = "${{ env.LATEST_PYTHON_VERSION }}" ]; then
-            uv run pytest -v -m "not regression" --cov=rt_opt --cov-report=json --junitxml unit-test-results/test_report.xml
+            uv run pytest -v -m "not regression" --cov=rt_opt --cov-report=json --junitxml test-results/unit_test_report.xml
           else
             uv run pytest -v -m "not regression"
           fi
 
-      - name: Publish unit test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: (!cancelled())
-        with:
-          files: unit-test-results/**/*.xml
-
       - name: Run regression tests
-        # Run regression tests only for the preferred Python version.
+        # Run regression tests only for the latest Python version.
         if: ${{ matrix.python-version == env.LATEST_PYTHON_VERSION }}
         run: |
-          uv run pytest -v -m regression --junitxml regression-test-results/test_report.xml
+          uv run pytest -v -m regression --junitxml test-results/regression_test_report.xml
 
-      - name: Publish regression test results
+      - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: ${{ matrix.python-version == env.LATEST_PYTHON_VERSION && !cancelled() }}
         with:
-          files: regression-test-results/**/*.xml
+          files: test-results/**/*.xml
 
       - name: Update Coverage Badge
-        # Only update the coverage badge for the preferred Python version and on master.
-        if: ${{ matrix.python-version == env.LATEST_PYTHON_VERSION && github.ref == 'refs/heads/master' }}
+        # Only update the coverage badge for the latest Python version and on the
+        # default branch.
+        if: ${{ matrix.python-version == env.LATEST_PYTHON_VERSION && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
         uses: we-cli/coverage-badge-action@main

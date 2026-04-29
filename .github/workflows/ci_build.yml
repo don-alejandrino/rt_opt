@@ -70,7 +70,7 @@ jobs:
         # unnecessary multiple coverage runs.
         run: |
           if [ "${{ matrix.python-version }}" = "${{ env.PREFERRED_PYTHON_VERSION }}" ]; then
-            uv run pytest -v -m "not regression" --cov=src --cov-report=json
+            uv run pytest -v -m "not regression" --cov=src --cov-report=json:./coverage
           else
             uv run pytest -v -m "not regression"
           fi

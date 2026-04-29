@@ -75,13 +75,13 @@ jobs:
             uv run pytest -v -m "not regression"
           fi
 
-      - name: Update Coverage Badge
-        # Only update the coverage badge for the preferred Python version and on master.
-        if: ${{ matrix.python-version == env.PREFERRED_PYTHON_VERSION }}
-        uses: we-cli/coverage-badge-action@main
-
       - name: Run regression tests
         # Run regression tests only for the preferred Python version.
         if: ${{ matrix.python-version == env.PREFERRED_PYTHON_VERSION }}
         run: |
           uv run pytest -v -m regression
+
+      - name: Update Coverage Badge
+        # Only update the coverage badge for the preferred Python version and on master.
+        if: ${{ matrix.python-version == env.PREFERRED_PYTHON_VERSION }}
+        uses: we-cli/coverage-badge-action@main

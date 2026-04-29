@@ -75,6 +75,7 @@ jobs:
             uv run pytest -v -m "not regression"
           fi
           ls -a
+          ls -a .coverage*
 
       - name: Update Coverage Badge
         # Only update the coverage badge for the preferred Python version and on master.

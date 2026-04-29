@@ -2,6 +2,7 @@ name: "Build Pipeline"
 
 on:
   push:
+    # TODO: Constrain to master branch once the pipeline is ready.
   pull_request:
     branches: [ "master" ]
   workflow_dispatch:
@@ -65,5 +66,16 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run unit tests
+        # Run the tests with coverage only with the preferred Python version, to avoid
+        # unnecessary multiple coverage runs.
         run: |
-          uv run pytest -v -m "not regression"
+          if [ "${{ matrix.python-version }}" = "${{ env.PREFERRED_PYTHON_VERSION }}" ]; then
+            uv run pytest -v -m "not regression" --cov=src --cov-report=xml
+          else
+            uv run pytest -v -m "not regression"
+          fi
+
+      - name: Run regression tests
+        if: ${{ matrix.python-version == env.PREFERRED_PYTHON_VERSION }}
+        run: |
+          uv run pytest -v -m regression

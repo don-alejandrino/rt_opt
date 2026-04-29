@@ -69,22 +69,30 @@ jobs:
         # unnecessary multiple coverage runs.
         run: |
           if [ "${{ matrix.python-version }}" = "${{ env.LATEST_PYTHON_VERSION }}" ]; then
-            uv run pytest -v -m "not regression" --cov=rt_opt --cov-report=json --junitxml test-results/unit_test_report.xml
+            uv run pytest -v -m "not regression" --cov=rt_opt --cov-report=json --junitxml unit-test-results/test_report.xml
           else
-            uv run pytest -v -m "not regression"
+            uv run pytest -v -m "not regression" --junitxml unit-test-results/test_report.xml
           fi
+
+      - name: Publish unit test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
+        with:
+          files: unit-test-results/**/*.xml
+          check_name: Unit Test Results (Python ${{ matrix.python-version }})
 
       - name: Run regression tests
         # Run regression tests only for the latest Python version.
         if: ${{ matrix.python-version == env.LATEST_PYTHON_VERSION }}
         run: |
-          uv run pytest -v -m regression --junitxml test-results/regression_test_report.xml
+          uv run pytest -v -m regression --junitxml regression-test-results/test_report.xml
 
-      - name: Publish test results
+      - name: Publish regression test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: ${{ matrix.python-version == env.LATEST_PYTHON_VERSION && !cancelled() }}
         with:
-          files: test-results/**/*.xml
+          files: regression-test-results/**/*.xml
+          check_name: Regression Test Results (Python ${{ env.LATEST_PYTHON_VERSION }})
 
       - name: Update Coverage Badge
         # Only update the coverage badge for the latest Python version and on the

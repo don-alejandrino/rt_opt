@@ -1,5 +1,5 @@
 <h1 align="center">
-<img width="400" alt="rt_opt_logo" src="https://github.com/user-attachments/assets/76f793d4-7044-49ff-b3e4-f375778ffcb9" />
+<img width="400" alt="rt_opt_logo" src="https://github.com/user-attachments/assets/8f304bd1-7b60-48ee-8855-af4ebe83a8c8" />
 </h1><br>
 
 [![Python Versions](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-blue)](https://github.com/don-alejandrino/rt_opt)
